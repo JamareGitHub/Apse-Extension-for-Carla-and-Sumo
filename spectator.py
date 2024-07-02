@@ -135,6 +135,11 @@ class CarlaCameraClient:
                 print("Window closed by user.")
                 self.exit_flag = True
 
+
+            self.vehicle.update_state_from_sumo()
+            print(self.vehicle)
+            print(self.vehicle.get_velocity())
+            print(self.vehicle.get_acceleration())
         
         self.cleanup()
 
