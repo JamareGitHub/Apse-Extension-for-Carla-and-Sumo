@@ -35,7 +35,11 @@ def start_simulation():
 
     selected_index = map_list.curselection()
 
-    hudSelection()
+    #createvType()
+
+    create_xml()
+
+
 
     if selected_index:
         selected_map = map_list.get(selected_index[0])
@@ -43,9 +47,7 @@ def start_simulation():
         # Erstelle die .rou.xml Datei für die Fahrzeuge
 
         modify_vehicle_routes(selected_map)
-        
-        
-
+    
         if simulate_var.get(): # Wenn Checkbox angekreuzt ist
 
             carla_exe = os.path.join(carla_base_dir, "CarlaUE4.exe")
@@ -82,22 +84,37 @@ def start_simulation():
 
 
 def hudSelection():
-    experience_level= 5
+    experience_level = 5
     age = 30
 
-    for hud in hud_frames:
+    # Dictionary to store HUD attributes
+    hud_data = {}
+
+    for idx, hud in enumerate(hud_frames):
         probability = hud['entry'].get()
         brightness_level = hud['brightness_var'].get()
         information_density = hud['density_var'].get()
         information_relevance = hud['relevance_var'].get()
         fov_selection = hud['fov_var'].get()
+
         distraction_level = calculations.calc_distraction(information_relevance, fov_selection, information_density, brightness_level)
         fatigueness_level = calculations.calc_fatigueness(information_relevance, fov_selection, information_density)
         awareness_level = calculations.calc_awareness(fov_selection, information_relevance, information_density, distraction_level, fatigueness_level)
         reactTime = calculations.calc_ReactTime(distraction_level, fatigueness_level, experience_level, awareness_level, age)
+        maxSpeed = calculations.calc_SpeedAd(information_density, fov_selection, distraction_level, fatigueness_level, experience_level, awareness_level)
 
-        print(f"HUD attributes - Probability: {probability}, Brightness Level: {brightness_level}, Information Density: {information_density}, Information Relevance: {information_relevance}, FoV Selection: {fov_selection}")
-        print("Calculated: distraction: " + str(distraction_level) + " fatigueness: " + str(fatigueness_level) + " awareness: " + str(awareness_level) + " reacTime: " + str(reactTime))
+        #print(f"HUD attributes - Probability: {probability}, Brightness Level: {brightness_level}, Information Density: {information_density}, Information Relevance: {information_relevance}, FoV Selection: {fov_selection}")
+        #print(f"Calculated: distraction: {distraction_level}, fatigueness: {fatigueness_level}, awareness: {awareness_level}, reactTime: {reactTime}")
+
+        # Store the calculated values in the dictionary
+        hud_data[f'HUD{idx+1}'] = {
+            'reactTime': reactTime,
+            'fatigueness_level': fatigueness_level,
+            'awareness_level': awareness_level,
+            'max_speed': maxSpeed
+        }
+
+    return hud_data
 
 
 def start_sumo(selected_sumocfg):
@@ -108,6 +125,41 @@ def start_sumo(selected_sumocfg):
         
     except FileNotFoundError:
         print("SUMO konnte nicht gefunden werden. Stelle sicher, dass der Pfad korrekt ist.")
+
+
+def create_xml():
+    original_routes_file = os.path.join(sumo_base_dir, "examples", "carlavtypes.rou.xml")
+
+    # HUD Daten abrufen
+    hud_data = hudSelection()
+
+    # XML-Dokument einlesen
+    try:
+        tree = ET.parse(original_routes_file)
+        root = tree.getroot()
+
+        # Anzahl der vTypes im XML-Dokument
+        vtypes = root.findall('vType')
+        vtype_count = len(vtypes)
+
+        # Gehe durch jeden vType und weise entsprechende HUD-Daten zu, falls vorhanden
+        for idx, vType in enumerate(vtypes, start=1):
+            hud_key = f'HUD{idx}'  # HUD Schlüssel für den Zugriff auf HUD-Daten
+
+            if hud_key in hud_data:
+                max_speed = hud_data[hud_key].get("max_speed", "default_value")
+                vType.set('maxSpeed', str(max_speed))
+                print(f"vType {idx} zugewiesener maxSpeed: {max_speed}")
+
+        # Geändertes XML-Dokument speichern (Überschreiben der Originaldatei)
+        tree.write(original_routes_file, encoding="UTF-8", xml_declaration=True)
+        print(f"Modifizierte XML-Datei gespeichert unter: {original_routes_file}")
+
+    except ET.ParseError as e:
+        print(f"Fehler beim Parsen der XML-Datei {original_routes_file}: {e}")
+    except FileNotFoundError as e:
+        print(f"Die Datei {original_routes_file} wurde nicht gefunden: {e}")
+
 
 
 def modify_vehicle_routes(selected_map):
@@ -123,7 +175,7 @@ def modify_vehicle_routes(selected_map):
         for vehicle in root.findall('vehicle'):
             vehicle_type = random.choice(vehicle_types)
             vehicle.set('type', vehicle_type)
-            print(f"Fahrzeug-ID {vehicle.get('id')} zugewiesener Typ: {vehicle_type}")
+            #print(f"Fahrzeug-ID {vehicle.get('id')} zugewiesener Typ: {vehicle_type}")
 
         # Geändertes XML-Dokument speichern (Überschreiben der Originaldatei)
         tree.write(original_routes_file, encoding="UTF-8", xml_declaration=True)
