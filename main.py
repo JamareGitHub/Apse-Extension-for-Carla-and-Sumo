@@ -9,7 +9,7 @@ import xml.dom.minidom as minidom
 import calculations
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
-carla_base_dir = r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor"
+carla_base_dir = r"F:\Softwareprojekt\CARLA_0.9.15\WindowsNoEditor"
 config_script = os.path.join(carla_base_dir, "PythonAPI", "util", "config.py")
 
 # Basisverzeichnis für SUMO
@@ -31,7 +31,7 @@ maps = {
 hud_count = 0
 
 # Pfad zur vorhandenen XML-Datei mit vType-Elementen
-vtypes_xml_path = r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor\Co-Simulation\Sumo\examples\carlavtypes.rou.xml"
+vtypes_xml_path = carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml"
 
 def start_simulation():
 
@@ -44,7 +44,7 @@ def start_simulation():
     for hud_id, data in hud_data.items():
         print(f"{hud_id}: {data}")
 
-    update_max_speeds(r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor\Co-Simulation\Sumo\examples\carlavtypes.rou.xml",hud_data)
+    update_max_speeds(carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml",hud_data)
 
     if selected_index:
         selected_map = map_list.get(selected_index[0])
@@ -60,7 +60,7 @@ def start_simulation():
             try:
                 # Starte die CarlaUE4.exe mit dem Argument -dx11
                 print("Starte CarlaUE4.exe...")
-                subprocess.Popen([carla_exe, "-dx11"])
+                subprocess.Popen([carla_exe])
 
                 # Warte ein paar Sekunden, damit CarlaUE4.exe gestartet werden kann
                 time.sleep(20)
