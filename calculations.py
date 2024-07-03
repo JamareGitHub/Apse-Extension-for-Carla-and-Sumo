@@ -144,7 +144,7 @@ def calc_ReactTime(distraction_level, fatigueness_level, experience_level, aware
 
 def calc_MinGap(distraction_level, fatigueness_level, experience_level, awareness_level):
 
-    minGap = 50 + (-0.6 * distraction_level + -0.9 * fatigueness_level + 0.7 * experience_level + 1 * awareness_level)
+    minGap = (50 + (-0.6 * distraction_level + -0.9 * fatigueness_level + 0.7 * experience_level + 1 * awareness_level))/10
 
     return minGap
 
