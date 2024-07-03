@@ -17,6 +17,9 @@ sumo_base_dir = os.path.join(carla_base_dir, "Co-Simulation", "Sumo")
 
 output_folder = r"C:\Users\wimme\Documents\Uni\9. Semester\combined"
 
+# Liste der verfügbaren HUD-IDs
+available_hud_ids = ["vehicle.audi.a2","vehicle.audi.tt","vehicle.nissan.micra"]
+
 # Liste der verfügbaren Maps
 maps = {
     "Town01": "{}.sumocfg".format(os.path.join(sumo_base_dir, "examples", "Town01")),
@@ -36,6 +39,10 @@ def start_simulation():
     selected_index = map_list.curselection()
 
     #createvType()
+    hud_data = hudSelection()
+    print("Gespeicherte HUD-Daten:")
+    for hud_id, data in hud_data.items():
+        print(f"{hud_id}: {data}")
 
     create_xml()
 
@@ -96,6 +103,7 @@ def hudSelection():
         information_density = hud['density_var'].get()
         information_relevance = hud['relevance_var'].get()
         fov_selection = hud['fov_var'].get()
+        hud_id = hud['hud_id']
 
         distraction_level = calculations.calc_distraction(information_relevance, fov_selection, information_density, brightness_level)
         fatigueness_level = calculations.calc_fatigueness(information_relevance, fov_selection, information_density)
@@ -103,15 +111,14 @@ def hudSelection():
         reactTime = calculations.calc_ReactTime(distraction_level, fatigueness_level, experience_level, awareness_level, age)
         maxSpeed = calculations.calc_SpeedAd(information_density, fov_selection, distraction_level, fatigueness_level, experience_level, awareness_level)
 
-        #print(f"HUD attributes - Probability: {probability}, Brightness Level: {brightness_level}, Information Density: {information_density}, Information Relevance: {information_relevance}, FoV Selection: {fov_selection}")
-        #print(f"Calculated: distraction: {distraction_level}, fatigueness: {fatigueness_level}, awareness: {awareness_level}, reactTime: {reactTime}")
-
         # Store the calculated values in the dictionary
-        hud_data[f'HUD{idx+1}'] = {
+    
+        hud_data[hud_id] = {
             'reactTime': reactTime,
             'fatigueness_level': fatigueness_level,
             'awareness_level': awareness_level,
-            'max_speed': maxSpeed
+            'max_speed': maxSpeed,
+            'hud_id': hud_id
         }
 
     return hud_data
@@ -191,26 +198,33 @@ def modify_vehicle_routes(selected_map):
 def close_window():
     root.destroy()
 
-# Funktion zum Hinzufügen eines neuen HUDs
 def add_hud():
     global hud_count
     hud_count += 1
 
-    hud_idx = len(hud_frames) + 1
-    hud_frame = create_hud_frame(hud_idx)
-    hud_frames.append(hud_frame)
-    hud_frame['frame'].pack(pady=10, padx=20, ipadx=10, ipady=10, fill="x")
-    update_scrollregion()
+    # Prüfen, ob noch IDs verfügbar sind
+    if available_hud_ids:
+        hud_id = available_hud_ids.pop(0)  # Nehme die erste verfügbare ID
+        hud_idx = len(hud_frames) + 1
+        hud_frame = create_hud_frame(hud_idx, hud_id)
+        hud_frames.append(hud_frame)
+        hud_frame['frame'].pack(pady=10, padx=20, ipadx=10, ipady=10, fill="x")
+        update_scrollregion()
+    else:
+        messagebox.showwarning("Keine verfügbaren IDs", "Es sind keine weiteren HUD-IDs verfügbar.")
 
 # Funktion zum Entfernen eines HUDs
-def remove_hud(hud_frame):
+def remove_hud(hud_frame, hud_id):
     global hud_count
     hud_count -= 1
 
-    for hud_idx, hud in enumerate(hud_frames):
+    for idx, hud in enumerate(hud_frames):
         if hud['frame'] == hud_frame:
             hud_frames.remove(hud)
             hud_frame.destroy()
+            # Füge die ID wieder der Liste der verfügbaren HUD-IDs hinzu
+            available_hud_ids.append(hud_id)
+            available_hud_ids.sort()  # Optional: Sortiere die IDs für Konsistenz
             update_hud_names()
             update_scrollregion()
             break
@@ -221,7 +235,7 @@ def update_hud_names():
         hud_frame['header'].configure(text=f"HUD {hud_idx}")
 
 # Funktion zur Erstellung des Frames für ein HUD
-def create_hud_frame(hud_number):
+def create_hud_frame(hud_number, hud_id):
     frame = tk.Frame(scrollable_frame, bg="white", bd=2, relief="raised")
     header = tk.Label(frame, text=f"HUD {hud_number}", font=('Helvetica', 12, 'bold'), bg="white")
     header.grid(row=0, column=0, columnspan=3, pady=10, sticky='n')
@@ -295,7 +309,7 @@ def create_hud_frame(hud_number):
     fov_question_button.bind("<Enter>", lambda event, tooltip=fov_tooltip: tooltip.show_tooltip())
     fov_question_button.bind("<Leave>", lambda event, tooltip=fov_tooltip: tooltip.hide_tooltip())
 
-    remove_button = tk.Button(frame, text="HUD entfernen", command=lambda: remove_hud(frame), bg="#ff6347", fg="white")
+    remove_button = tk.Button(frame, text="HUD entfernen", command=lambda: remove_hud(frame, hud_id), bg="#ff6347", fg="white")
     remove_button.grid(row=6, column=0, columnspan=3, pady=10)
 
     return {
@@ -305,7 +319,8 @@ def create_hud_frame(hud_number):
         'brightness_var': brightness_var,
         'density_var': density_var,
         'relevance_var': relevance_var,
-        'fov_var': fov_var
+        'fov_var': fov_var,
+        'hud_id': hud_id
     }
 
 # ToolTip Klasse zur Erstellung der Tooltip-Fenster
