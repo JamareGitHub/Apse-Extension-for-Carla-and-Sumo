@@ -10,6 +10,7 @@ import calculations
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
 carla_base_dir = r"F:\Softwareprojekt\CARLA_0.9.15\WindowsNoEditor"
+#carla_base_dir = r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor"
 config_script = os.path.join(carla_base_dir, "PythonAPI", "util", "config.py")
 
 # Basisverzeichnis für SUMO
@@ -96,7 +97,6 @@ def start_simulation():
             except FileNotFoundError as e:
                 print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
             
-
 
 
 def hudSelection():
@@ -247,18 +247,22 @@ def add_hud():
 # Funktion zum Entfernen eines HUDs
 def remove_hud(hud_frame, hud_id):
     global hud_count
-    hud_count -= 1
 
-    for idx, hud in enumerate(hud_frames):
-        if hud['frame'] == hud_frame:
-            hud_frames.remove(hud)
-            hud_frame.destroy()
-            # Füge die ID wieder der Liste der verfügbaren HUD-IDs hinzu
-            available_hud_ids.append(hud_id)
-            available_hud_ids.sort()  # Optional: Sortiere die IDs für Konsistenz
-            update_hud_names()
-            update_scrollregion()
-            break
+    if (hud_count > 1):
+        hud_count -= 1
+
+        for idx, hud in enumerate(hud_frames):
+            if hud['frame'] == hud_frame:
+                hud_frames.remove(hud)
+                hud_frame.destroy()
+                # Füge die ID wieder der Liste der verfügbaren HUD-IDs hinzu
+                available_hud_ids.append(hud_id)
+                available_hud_ids.sort()  # Optional: Sortiere die IDs für Konsistenz
+                update_hud_names()
+                update_scrollregion()
+                break
+    else:
+        messagebox.showwarning("Achtung", "Mindestens ein HUD muss in der Liste verbleiben.")
 
 # Funktion zur Aktualisierung der HUD-Namen nach Entfernen eines HUDs
 def update_hud_names():
