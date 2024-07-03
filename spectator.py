@@ -16,6 +16,10 @@ class CarlaCameraClient:
         self.image_data = None
         self.exit_flag = False
         self.speed = 0.0  # Store the speed of the vehicle
+        self.current_location=None
+        self.previous_location=None
+        self.current_location_timestamp=None
+        self.previous_location_timestamp=None
         # Initialize OpenCV window
         cv2.namedWindow('Camera Output', cv2.WINDOW_NORMAL)
 
@@ -28,18 +32,27 @@ class CarlaCameraClient:
             self.vehicles = self.world.get_actors().filter("vehicle.*")
         print(f"Found {len(self.vehicles)} vehicles")
 
-    def attach_camera_to_vehicle(self, vehicle):
-        """Attach a camera to a given vehicle."""
+    def clear_old_vehicle(self):
         if self.camera:
             self.camera.stop()
             self.camera.destroy()
         
+        self.current_location=None
+        self.previous_location=None
+        self.current_location_timestamp=None
+        self.previous_location_timestamp=None
+
+
+    def attach_camera_to_vehicle(self, vehicle):
+        """Attach a camera to a given vehicle."""
+        self.clear_old_vehicle()
+        
         camera_bp = self.blueprint_library.find('sensor.camera.rgb')
-        camera_bp.set_attribute('image_size_x', '640')
-        camera_bp.set_attribute('image_size_y', '480')
+        camera_bp.set_attribute('image_size_x', '1920')
+        camera_bp.set_attribute('image_size_y', '1080')
         camera_bp.set_attribute('fov', '110')
 
-        camera_transform = carla.Transform(carla.Location(x=1.5, z=2.4))
+        camera_transform = carla.Transform(carla.Location(x=0.2, y= -0.2, z=1.5))
         self.camera = self.world.spawn_actor(camera_bp, camera_transform, attach_to=vehicle)
         self.camera.listen(lambda image: self.process_image(image))
         self.vehicle = vehicle  # Store the current vehicle
@@ -57,24 +70,38 @@ class CarlaCameraClient:
         """Display the camera output using OpenCV."""
         if self.image_data is not None:
             # Get the vehicle speed
-            self.speed = self.get_vehicle_speed()
+
+            self.get_vehicle_speed()
             # Overlay the speed on the image
-            self.add_speed_hud(self.image_data)
+            self.add_hud(self.image_data)
             cv2.imshow('Camera Output', self.image_data)
 
     def get_vehicle_speed(self):
         """Get the speed of the current vehicle."""
         if self.vehicle is not None:
-            velocity = self.vehicle.get_velocity()
-            speed = 3.6 * np.sqrt(velocity.x**2 + velocity.y**2 + velocity.z**2)  # Convert m/s to km/h
-            return speed
-        return 0.0
+            self.current_location = self.vehicle.get_location()
+            self.current_location_timestamp = time.time()
+            if self.previous_location == None or self.previous_location_timestamp == None:
+                self.previous_location=self.current_location
+                self.previous_location_timestamp = self.current_location_timestamp
+            elif self.current_location_timestamp - self.previous_location_timestamp < 0.5:
+                return self.speed
 
-    def add_speed_hud(self, image):
+            else:
+                distance = np.sqrt((self.current_location.x - self.previous_location.x)**2 + (self.current_location.y - self.previous_location.y)**2 + (self.current_location.z - self.previous_location.z)**2)
+                period = (self.current_location_timestamp - self.previous_location_timestamp)
+                self.speed = 3.6 * (distance / period)#*3.6 für km/h statt m/s
+                
+                self.previous_location=self.current_location
+                self.previous_location_timestamp = self.current_location_timestamp
+
+    def add_hud(self, image):
         """Add the speed HUD to the image."""
+        vehicle_name=f"Vehicle type: {self.vehicle.type_id }"
         speed_text = f"Speed: {self.speed:.2f} km/h"
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(image, speed_text, (10, 30), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(image, vehicle_name, (10, 30), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(image, speed_text, (10, 60), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
 
     def switch_vehicle(self):
         self.get_all_vehicles()
@@ -93,7 +120,7 @@ class CarlaCameraClient:
                 print(f"Switching to vehicle {vehicle.type_id} at {vehicle.get_location()}")
                 
                 self.attach_camera_to_vehicle(vehicle)
-                print("Vehicle switched and camera attached.")
+                print("Vehicle switched and sensors attached.")
                 break  # Exit the loop if switching was successful
             except Exception as e:
                 # Handle the case where the vehicle doesn't exist anymore
@@ -136,10 +163,7 @@ class CarlaCameraClient:
                 self.exit_flag = True
 
 
-            self.vehicle.update_state_from_sumo()
-            print(self.vehicle)
-            print(self.vehicle.get_velocity())
-            print(self.vehicle.get_acceleration())
+
         
         self.cleanup()
 
@@ -149,6 +173,8 @@ class CarlaCameraClient:
         if self.camera:
             self.camera.stop()
             self.camera.destroy()
+   
+
         cv2.destroyAllWindows()
 
 if __name__ == '__main__':
