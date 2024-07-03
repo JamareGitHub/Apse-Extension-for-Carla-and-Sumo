@@ -38,15 +38,12 @@ def start_simulation():
 
     selected_index = map_list.curselection()
 
-    #createvType()
     hud_data = hudSelection()
     print("Gespeicherte HUD-Daten:")
     for hud_id, data in hud_data.items():
         print(f"{hud_id}: {data}")
 
-    create_xml()
-
-
+    update_max_speeds(r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor\Co-Simulation\Sumo\examples\carlavtypes.rou.xml",hud_data)
 
     if selected_index:
         selected_map = map_list.get(selected_index[0])
@@ -110,6 +107,9 @@ def hudSelection():
         awareness_level = calculations.calc_awareness(fov_selection, information_relevance, information_density, distraction_level, fatigueness_level)
         reactTime = calculations.calc_ReactTime(distraction_level, fatigueness_level, experience_level, awareness_level, age)
         maxSpeed = calculations.calc_SpeedAd(information_density, fov_selection, distraction_level, fatigueness_level, experience_level, awareness_level)
+        minGap = calculations.calc_MinGap(distraction_level, fatigueness_level, experience_level, awareness_level)
+        speedFactor = calculations.calc_SpeedAd(information_density, fov_selection, distraction_level, fatigueness_level, experience_level, awareness_level)
+
 
         # Store the calculated values in the dictionary
     
@@ -118,10 +118,53 @@ def hudSelection():
             'fatigueness_level': fatigueness_level,
             'awareness_level': awareness_level,
             'max_speed': maxSpeed,
-            'hud_id': hud_id
+            "min_Gap": minGap,
+            'hud_id': hud_id,
+            'speed_factor': speedFactor
         }
 
     return hud_data
+
+
+def update_max_speeds(xml_file_path, hud_data):
+    # Parse the XML file
+    tree = ET.parse(xml_file_path)
+    root = tree.getroot()
+
+    # Update maxSpeed, minGapLat, speedFactor, and add driverstate params for each HUD in hud_data
+    for hud_id, data in hud_data.items():
+        max_speed = data['max_speed']
+        minGap = data.get('min_Gap', '')  # Assuming 'min_Gap' might not always be present
+        speedFactor = data.get('speed_factor', '')  # Assuming 'speed_factor' might not always be present
+        reactionTime = data.get('reactTime')
+
+        # Find the vType element with the specified hud_id
+        for vtype_elem in root.findall('vType'):
+            vtype_id = vtype_elem.get('id')
+
+            # Check if the vType id matches the current hud_id
+            if vtype_id == hud_id:
+                # Update the maxSpeed, minGapLat, speedFactor attributes
+                vtype_elem.set('maxSpeed', str(max_speed))
+                vtype_elem.set('minGapLat', str(minGap))
+                vtype_elem.set('speedFactor', str(speedFactor))
+
+                # Add driverstate params
+                driverstate_param1 = ET.SubElement(vtype_elem, 'param')
+                driverstate_param1.set('key', 'has.driverstate.device')
+                driverstate_param1.set('value', 'true')
+
+                driverstate_param2 = ET.SubElement(vtype_elem, 'param')
+                driverstate_param2.set('key', 'maximalReactionTime')
+                driverstate_param2.set('value', str(reactionTime))
+
+                # Set random color (RGB)
+                color = "#{:02x}{:02x}{:02x}".format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+                vtype_elem.set('color', color)
+
+    # Write the updated XML back to the file
+    tree.write(xml_file_path, encoding='utf-8', xml_declaration=True)
+
 
 
 def start_sumo(selected_sumocfg):
@@ -132,41 +175,6 @@ def start_sumo(selected_sumocfg):
         
     except FileNotFoundError:
         print("SUMO konnte nicht gefunden werden. Stelle sicher, dass der Pfad korrekt ist.")
-
-
-def create_xml():
-    original_routes_file = os.path.join(sumo_base_dir, "examples", "carlavtypes.rou.xml")
-
-    # HUD Daten abrufen
-    hud_data = hudSelection()
-
-    # XML-Dokument einlesen
-    try:
-        tree = ET.parse(original_routes_file)
-        root = tree.getroot()
-
-        # Anzahl der vTypes im XML-Dokument
-        vtypes = root.findall('vType')
-        vtype_count = len(vtypes)
-
-        # Gehe durch jeden vType und weise entsprechende HUD-Daten zu, falls vorhanden
-        for idx, vType in enumerate(vtypes, start=1):
-            hud_key = f'HUD{idx}'  # HUD Schlüssel für den Zugriff auf HUD-Daten
-
-            if hud_key in hud_data:
-                max_speed = hud_data[hud_key].get("max_speed", "default_value")
-                vType.set('maxSpeed', str(max_speed))
-                print(f"vType {idx} zugewiesener maxSpeed: {max_speed}")
-
-        # Geändertes XML-Dokument speichern (Überschreiben der Originaldatei)
-        tree.write(original_routes_file, encoding="UTF-8", xml_declaration=True)
-        print(f"Modifizierte XML-Datei gespeichert unter: {original_routes_file}")
-
-    except ET.ParseError as e:
-        print(f"Fehler beim Parsen der XML-Datei {original_routes_file}: {e}")
-    except FileNotFoundError as e:
-        print(f"Die Datei {original_routes_file} wurde nicht gefunden: {e}")
-
 
 
 def modify_vehicle_routes(selected_map):
