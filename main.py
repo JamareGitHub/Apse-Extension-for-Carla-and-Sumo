@@ -69,23 +69,36 @@ def start_simulation():
                 # Führe das Konfigurationsskript aus
                 print("Starte Konfigurationsskript: {}".format(config_script))
                 config_command = ["python", config_script, "--map", selected_map]
-                subprocess.Popen(config_command, cwd=os.path.dirname(config_script))
-
+                configsubprocess = subprocess.Popen(config_command, cwd=os.path.dirname(config_script))
                 # Warte kurz vor der Ausführung des nächsten Befehls
-                time.sleep(5)
+                configsubprocess.wait()
+                #time.sleep(5)
                 print("Wartezeit vor dem Start des Synchronisationsskripts.")
 
                 # Führe das Synchronisationsskript aus
                 sync_script = os.path.join(sumo_base_dir, "run_synchronization.py")
                 print("Starte Synchronisationsskript mit SUMO: {}".format(selected_sumocfg))
                 sync_command = ["python", sync_script, selected_sumocfg, "--sumo-gui", "--sync-vehicle-color"]
-                subprocess.Popen(sync_command, cwd=os.path.dirname(sync_script))
+                syncprocess = subprocess.Popen(sync_command, cwd=os.path.dirname(sync_script))
 
             except FileNotFoundError as e:
                 print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
         else:
             start_sumo(selected_sumocfg)
             print("Simulation nicht gestartet, da die Checkbox nicht angekreuzt ist.")
+
+        if spectate_var.get():
+            try:
+                print("starting spectator")
+                spectatorpath = "./spectator.py"
+                spectatordir = os.path.dirname(spectatorpath)
+                subprocess.Popen(["python",spectatorpath , spectatordir])
+                print("started spectator")
+            
+            except FileNotFoundError as e:
+                print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
+            
+
 
 
 def hudSelection():
@@ -384,6 +397,8 @@ root.title("SUMO Simulation Launcher")
 # Variable für den Status der Checkbox
 simulate_var = tk.BooleanVar()
 simulate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
+spectate_var = tk.BooleanVar()
+spectate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
 
 # Label für die Auswahl der Map
 map_label = tk.Label(root, text="Wähle eine Map:")
@@ -398,6 +413,10 @@ map_list.pack()
 # Checkbox für die Simulation
 simulate_checkbox = tk.Checkbutton(root, text="Co-Simulation mit Carla starten", variable=simulate_var)
 simulate_checkbox.pack()
+
+# Checkbox für den spectator
+spectator_checkbox = tk.Checkbutton(root, text="first person spectator starten", variable=spectate_var)
+spectator_checkbox.pack()
 
 # Fenstergröße und Position festlegen
 window_width = 800

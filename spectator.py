@@ -62,8 +62,8 @@ class CarlaCameraClient:
         """Process the image from the camera sensor."""
         array = np.frombuffer(image.raw_data, dtype=np.uint8)
         array = np.reshape(array, (image.height, image.width, 4))
-        array = array[:, :, :3]  # Remove alpha channel
-        array = array[:, :, ::-1]  # Convert RGB to BGR
+        #array = array[:, :, :3]  # Remove alpha channel
+        #array = array[:, :, ::-1]  # Convert RGB to BGR
         self.image_data = array.copy()  # Make the array writable by copying it
 
     def display_camera_output(self):
