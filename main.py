@@ -63,7 +63,7 @@ def start_simulation():
                 subprocess.Popen([carla_exe, "-dx11"])
 
                 # Warte ein paar Sekunden, damit CarlaUE4.exe gestartet werden kann
-                time.sleep(30)
+                time.sleep(20)
                 print("Wartezeit nach dem Start von CarlaUE4.exe.")
 
                 # Führe das Konfigurationsskript aus
@@ -107,7 +107,7 @@ def hudSelection():
         fatigueness_level = calculations.calc_fatigueness(information_relevance, fov_selection, information_density)
         awareness_level = calculations.calc_awareness(fov_selection, information_relevance, information_density, distraction_level, fatigueness_level)
         reactTime = calculations.calc_ReactTime(distraction_level, fatigueness_level, experience_level, awareness_level, age)
-        maxSpeed = calculations.calc_SpeedAd(information_density, fov_selection, distraction_level, fatigueness_level, experience_level, awareness_level)
+        maxSpeed = calculations.calc_MaxSpeed(experience_level, awareness_level)
         minGap = calculations.calc_MinGap(distraction_level, fatigueness_level, experience_level, awareness_level)
         speedFactor = calculations.calc_SpeedAd(information_density, fov_selection, distraction_level, fatigueness_level, experience_level, awareness_level)
 
@@ -212,8 +212,6 @@ def modify_vehicle_routes(selected_map):
         print(f"Fehler beim Parsen der XML-Datei {original_routes_file}: {e}")
     except FileNotFoundError as e:
         print(f"Die Datei {original_routes_file} wurde nicht gefunden: {e}")
-
-
 
 
 # Funktion zum Schließen des Hauptfensters
