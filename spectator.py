@@ -27,7 +27,6 @@ class CarlaCameraClient:
         """Retrieve all vehicles in the world."""
         self.vehicles = [] #reset vehicles so during switch vehicle new cars can be found and old vanish from list
         while len(self.vehicles) == 0:
-            print("Searching for vehicles...")
             self.world.wait_for_tick()
             self.vehicles = self.world.get_actors().filter("vehicle.*")
         print(f"Found {len(self.vehicles)} vehicles")
