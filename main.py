@@ -160,7 +160,7 @@ def update_max_speeds(xml_file_path, hud_data):
             if vtype_id == hud_id:
                 # Update the maxSpeed, minGapLat, speedFactor attributes
                 vtype_elem.set('maxSpeed', str(max_speed))
-                vtype_elem.set('minGapLat', str(minGap))
+                vtype_elem.set('minGap', str(minGap))
                 vtype_elem.set('speedFactor', str(speedFactor))
 
                 # Add driverstate params
