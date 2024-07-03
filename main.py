@@ -18,7 +18,8 @@ sumo_base_dir = os.path.join(carla_base_dir, "Co-Simulation", "Sumo")
 output_folder = r"C:\Users\wimme\Documents\Uni\9. Semester\combined"
 
 # Liste der verfügbaren HUD-IDs
-available_hud_ids = ["vehicle.audi.a2","vehicle.audi.tt","vehicle.nissan.micra"]
+available_hud_ids = ["vehicle.audi.a2","vehicle.audi.tt","vehicle.jeep.wrangler_rubicon","vehicle.chevrolet.impala", "vehicle.mini.cooper_s", "vehicle.mercedes.coupe", "vehicle.bmw.grandtourer" ,
+                     "vehicle.citroen.c3", "vehicle.ford.mustang", "vehicle.volkswagen.t2", "vehicle.lincoln.mkz_2017", "vehicle.seat.leon", "vehicle.nissan.patrol"]
 
 # Liste der verfügbaren Maps
 maps = {
@@ -62,7 +63,7 @@ def start_simulation():
                 subprocess.Popen([carla_exe, "-dx11"])
 
                 # Warte ein paar Sekunden, damit CarlaUE4.exe gestartet werden kann
-                time.sleep(20)
+                time.sleep(30)
                 print("Wartezeit nach dem Start von CarlaUE4.exe.")
 
                 # Führe das Konfigurationsskript aus
@@ -179,18 +180,29 @@ def start_sumo(selected_sumocfg):
 
 def modify_vehicle_routes(selected_map):
     original_routes_file = os.path.join(sumo_base_dir, "examples", "rou", selected_map + ".rou.xml")
-    vehicle_types = ["vehicle.chevrolet.impala", "vehicle.audi.a2"]
 
-    # XML-Dokument einlesen
     try:
+        # XML-Dokument einlesen
         tree = ET.parse(original_routes_file)
         root = tree.getroot()
 
-        # Fahrzeugtypen zufällig zuweisen
+        # Liste der HUD-IDs und deren Wahrscheinlichkeiten
+        vehicle_types = []
+        probabilities = []
+
+        for hud in hud_frames:
+            hud_id = hud['hud_id']
+            probability = float(hud['entry'].get())  # Wahrscheinlichkeit aus dem Eingabefeld
+            vehicle_types.append(hud_id)
+            probabilities.append(probability)
+
+        # Fahrzeugtypen den Fahrzeugen in der Route zuweisen
         for vehicle in root.findall('vehicle'):
-            vehicle_type = random.choice(vehicle_types)
-            vehicle.set('type', vehicle_type)
-            #print(f"Fahrzeug-ID {vehicle.get('id')} zugewiesener Typ: {vehicle_type}")
+            if vehicle_types:
+                vehicle_type = random.choices(vehicle_types, probabilities)[0]  # Wählt basierend auf Wahrscheinlichkeiten aus
+                vehicle.set('type', vehicle_type)
+            else:
+                print("Keine verfügbaren HUD-IDs mehr für Fahrzeuge.")
 
         # Geändertes XML-Dokument speichern (Überschreiben der Originaldatei)
         tree.write(original_routes_file, encoding="UTF-8", xml_declaration=True)
@@ -200,6 +212,8 @@ def modify_vehicle_routes(selected_map):
         print(f"Fehler beim Parsen der XML-Datei {original_routes_file}: {e}")
     except FileNotFoundError as e:
         print(f"Die Datei {original_routes_file} wurde nicht gefunden: {e}")
+
+
 
 
 # Funktion zum Schließen des Hauptfensters
