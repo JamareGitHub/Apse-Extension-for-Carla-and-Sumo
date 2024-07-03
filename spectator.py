@@ -98,10 +98,12 @@ class CarlaCameraClient:
     def add_hud(self, image):
         """Add the speed HUD to the image."""
         vehicle_name=f"Vehicle type: {self.vehicle.type_id }"
+        id_text=f"Vehicle ID: {self.vehicle.id }"
         speed_text = f"Speed: {self.speed:.2f} km/h"
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(image, vehicle_name, (10, 30), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-        cv2.putText(image, speed_text, (10, 60), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(image, id_text, (10, 60), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(image, speed_text, (10, 90), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
 
     def switch_vehicle(self):
         self.get_all_vehicles()
