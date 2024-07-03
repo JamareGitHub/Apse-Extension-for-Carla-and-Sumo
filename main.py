@@ -15,8 +15,6 @@ config_script = os.path.join(carla_base_dir, "PythonAPI", "util", "config.py")
 # Basisverzeichnis für SUMO
 sumo_base_dir = os.path.join(carla_base_dir, "Co-Simulation", "Sumo")
 
-output_folder = r"C:\Users\wimme\Documents\Uni\9. Semester\combined"
-
 # Liste der verfügbaren HUD-IDs
 available_hud_ids = ["vehicle.audi.a2","vehicle.audi.tt","vehicle.jeep.wrangler_rubicon","vehicle.chevrolet.impala", "vehicle.mini.cooper_s", "vehicle.mercedes.coupe", "vehicle.bmw.grandtourer" ,
                      "vehicle.citroen.c3", "vehicle.ford.mustang", "vehicle.volkswagen.t2", "vehicle.lincoln.mkz_2017", "vehicle.seat.leon", "vehicle.nissan.patrol"]
@@ -393,6 +391,8 @@ map_label.pack(pady=10)
 map_list = tk.Listbox(root)
 for map_name in maps:
     map_list.insert(tk.END, map_name)
+# Standardmäßig die erste Map auswählen
+map_list.selection_set(0)
 map_list.pack()
 
 # Checkbox für die Simulation
