@@ -15,11 +15,15 @@ class CarlaCameraClient:
         self.current_vehicle_index = -1
         self.image_data = None
         self.exit_flag = False
+
         self.speed = 0.0  # Store the speed of the vehicle
-        self.current_location=None
-        self.previous_location=None
-        self.current_location_timestamp=None
-        self.previous_location_timestamp=None
+        self.current_location=None#monster for "working" speedometer
+        self.previous_location=None#monster for "working" speedometer
+        self.current_location_timestamp=None#monster for "working" speedometer
+        self.previous_location_timestamp=None#monster for "working" speedometer
+
+        self.first_person_location = [-.1,-.3,1.3]#x,y,z
+
         # Initialize OpenCV window
         cv2.namedWindow('Camera Output', cv2.WINDOW_NORMAL)
 
@@ -41,6 +45,50 @@ class CarlaCameraClient:
         self.current_location_timestamp=None
         self.previous_location_timestamp=None
 
+    def set_first_person_cameralocation(self,vehicle):
+        vehicle_name=vehicle.type_id
+        if vehicle_name == "vehicle.audi.a2":
+            self.first_person_location=[0.2,-0.3,1.3]
+        
+        elif vehicle_name == "vehicle.audi.tt":
+            self.first_person_location=[0,-.3,1.25]
+        
+        elif vehicle_name == "vehicle.jeep.wrangler_rubicon":
+            self.first_person_location=[-0.3,-0.3,1.5]
+
+        elif vehicle_name ==  "vehicle.chevrolet.impala":
+            self.first_person_location=[0.1,-0.3,1.2]
+
+        elif vehicle_name == "vehicle.mini.cooper_s":
+            self.first_person_location=[-.1,-.35,1.2]
+
+        elif vehicle_name == "vehicle.mercedes.coupe":
+            self.first_person_location=[-.1,-.3,1.25]
+
+        elif vehicle_name == "vehicle.bmw.grandtourer":
+            self.first_person_location=[0,-.3,1.35]
+
+        elif vehicle_name == "vehicle.citroen.c3":
+            self.first_person_location=[-.1,-.3,1.3]
+            
+        elif vehicle_name == "vehicle.ford.mustang":
+            self.first_person_location=[-.2,-.3,1.1]
+            
+        elif vehicle_name == "vehicle.volkswagen.t2":
+            self.first_person_location=[1,-.35,1.65]
+            
+        elif vehicle_name == "vehicle.lincoln.mkz_2017":
+            self.first_person_location=[0,-.3,1.3]
+            
+        elif vehicle_name == "vehicle.seat.leon":
+            self.first_person_location=[0.1,-.3,1.3]
+            
+        elif vehicle_name == "vehicle.nissan.patrol":
+            self.first_person_location=[-.1,-.3,1.5]
+            
+        else:
+            print("vehicle type not found, using default camera position")
+            self.first_person_location=[-.1,-.3,1.3]
 
     def attach_camera_to_vehicle(self, vehicle):
         """Attach a camera to a given vehicle."""
@@ -49,9 +97,10 @@ class CarlaCameraClient:
         camera_bp = self.blueprint_library.find('sensor.camera.rgb')
         camera_bp.set_attribute('image_size_x', '1920')
         camera_bp.set_attribute('image_size_y', '1080')
-        camera_bp.set_attribute('fov', '110')
+        camera_bp.set_attribute('fov', '90')
 
-        camera_transform = carla.Transform(carla.Location(x=0.2, y= -0.2, z=1.5))
+        self.set_first_person_cameralocation(vehicle)
+        camera_transform = carla.Transform(carla.Location(x=self.first_person_location[0], y=self.first_person_location[1], z=self.first_person_location[2]))
         self.camera = self.world.spawn_actor(camera_bp, camera_transform, attach_to=vehicle)
         self.camera.listen(lambda image: self.process_image(image))
         self.vehicle = vehicle  # Store the current vehicle
@@ -61,8 +110,6 @@ class CarlaCameraClient:
         """Process the image from the camera sensor."""
         array = np.frombuffer(image.raw_data, dtype=np.uint8)
         array = np.reshape(array, (image.height, image.width, 4))
-        #array = array[:, :, :3]  # Remove alpha channel
-        #array = array[:, :, ::-1]  # Convert RGB to BGR
         self.image_data = array.copy()  # Make the array writable by copying it
 
     def display_camera_output(self):
