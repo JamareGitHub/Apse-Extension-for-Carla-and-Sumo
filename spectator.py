@@ -4,6 +4,8 @@ import cv2
 import os
 import time
 
+from collections import deque
+
 class CarlaCameraClient:
     def __init__(self, host='127.0.0.1', port=2000, icon_folder='./icons'):
         self.client = carla.Client(host, port)
@@ -22,6 +24,8 @@ class CarlaCameraClient:
         self.previous_location = None  # Track previous location for speed calculation
         self.current_location_timestamp = None  # Timestamp for current location
         self.previous_location_timestamp = None  # Timestamp for previous location
+        self.speed_history = deque(maxlen=5)  # Store the last 5 speed measurements for smoothing
+
 
         self.first_person_location = [-.1, -.3, 1.3]  # Camera position
 
@@ -127,18 +131,23 @@ class CarlaCameraClient:
         """Get the speed of the current vehicle."""
         if self.vehicle is not None:
             self.current_location = self.vehicle.get_location()
-            self.current_location_timestamp = time.time()
+            self.current_location_timestamp = time.perf_counter()  # High-resolution timestamp
+
             if self.previous_location is None or self.previous_location_timestamp is None:
                 self.previous_location = self.current_location
                 self.previous_location_timestamp = self.current_location_timestamp
-            elif self.current_location_timestamp - self.previous_location_timestamp < 0.5:
-                return self.speed
             else:
                 distance = np.sqrt((self.current_location.x - self.previous_location.x) ** 2 +
-                                   (self.current_location.y - self.previous_location.y) ** 2 +
-                                   (self.current_location.z - self.previous_location.z) ** 2)
+                                (self.current_location.y - self.previous_location.y) ** 2 +
+                                (self.current_location.z - self.previous_location.z) ** 2)
                 period = self.current_location_timestamp - self.previous_location_timestamp
-                self.speed = 3.6 * (distance / period)  # Convert m/s to km/h
+
+                # Calculate current speed in km/h and add to history
+                current_speed = 3.6 * (distance / period)
+                self.speed_history.append(current_speed)
+
+                # Compute smoothed speed as the average of the speed history
+                self.speed = sum(self.speed_history) / len(self.speed_history)
 
                 self.previous_location = self.current_location
                 self.previous_location_timestamp = self.current_location_timestamp
