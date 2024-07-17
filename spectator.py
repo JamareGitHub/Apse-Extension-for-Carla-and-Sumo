@@ -3,11 +3,12 @@ import numpy as np
 import cv2
 import os
 import time
+import math
 
 from collections import deque
 
 class CarlaCameraClient:
-    def __init__(self, host='127.0.0.1', port=2000, icon_folder='./icons'):
+    def __init__(self, host='127.0.0.1', port=2000):
         self.client = carla.Client(host, port)
         self.client.set_timeout(10.0)
         self.world = self.client.get_world()
@@ -24,27 +25,17 @@ class CarlaCameraClient:
         self.previous_location = None  # Track previous location for speed calculation
         self.current_location_timestamp = None  # Timestamp for current location
         self.previous_location_timestamp = None  # Timestamp for previous location
-        self.speed_history = deque(maxlen=5)  # Store the last 5 speed measurements for smoothing
+        self.speed_history = deque(maxlen=100)  # Store the last 5 speed measurements for smoothing
+        self.smoothing_timestamp = None
 
 
         self.first_person_location = [-.1, -.3, 1.3]  # Camera position
+        self.image_resolution_x = '1920'
+        self.image_resolution_y = '1080'
 
         # Initialize OpenCV window
         cv2.namedWindow('Camera Output', cv2.WINDOW_NORMAL)
 
-        # Load icons from the specified folder
-        self.icon_folder = icon_folder
-        self.icons = self.load_icons()
-
-    def load_icons(self):
-        """Load all icons from the specified folder."""
-        icons = {}
-        for file in os.listdir(self.icon_folder):
-            if file.endswith(".png"):  # Check if the file is a PNG image
-                icon_path = os.path.join(self.icon_folder, file)  # Get the full path of the icon
-                icon_name = os.path.splitext(file)[0]  # Get the icon name without extension
-                icons[icon_name] = cv2.imread(icon_path, cv2.IMREAD_UNCHANGED)  # Load the icon with transparency
-        return icons
 
     def get_all_vehicles(self):
         """Retrieve all vehicles in the world."""
@@ -63,6 +54,8 @@ class CarlaCameraClient:
         self.previous_location = None
         self.current_location_timestamp = None
         self.previous_location_timestamp = None
+        self.speed_history.clear()
+        self.smoothing_timestamp = None
 
     def set_first_person_cameralocation(self, vehicle):
         """Set the first-person camera location based on vehicle type."""
@@ -101,8 +94,8 @@ class CarlaCameraClient:
         """Attach a camera to a given vehicle."""
         self.clear_old_vehicle()
         camera_bp = self.blueprint_library.find('sensor.camera.rgb')
-        camera_bp.set_attribute('image_size_x', '1920')
-        camera_bp.set_attribute('image_size_y', '1080')
+        camera_bp.set_attribute('image_size_x', self.image_resolution_x)
+        camera_bp.set_attribute('image_size_y', self.image_resolution_y)
         camera_bp.set_attribute('fov', '90')
 
         self.set_first_person_cameralocation(vehicle)
@@ -144,10 +137,12 @@ class CarlaCameraClient:
 
                 # Calculate current speed in km/h and add to history
                 current_speed = 3.6 * (distance / period)
-                self.speed_history.append(current_speed)
+                self.speed_history.append(round(current_speed))
 
                 # Compute smoothed speed as the average of the speed history
-                self.speed = sum(self.speed_history) / len(self.speed_history)
+                if (not self.smoothing_timestamp or (np.sqrt((self.current_location_timestamp-self.smoothing_timestamp)**2)>0.1)):
+                    self.smoothing_timestamp=self.current_location_timestamp
+                    self.speed = sum(self.speed_history) / len(self.speed_history)
 
                 self.previous_location = self.current_location
                 self.previous_location_timestamp = self.current_location_timestamp
@@ -159,11 +154,10 @@ class CarlaCameraClient:
         # Calculate positions for the text and icons
         text_x = w // 2  # Center the text horizontally
         text_y_start = h // 2 - 30  # Center the text vertically, starting above the center
-        icon_y = text_y_start - 60  # Position the icons above the text
 
         vehicle_name = f"Vehicle type: {self.vehicle.type_id}"  # Vehicle type text
         id_text = f"Vehicle ID: {self.vehicle.id}"  # Vehicle ID text
-        speed_text = f"Speed: {self.speed:.2f} km/h"  # Speed text
+        speed_text = f"Speed: {round(self.speed)} km/h"  # Speed text
         font = cv2.FONT_HERSHEY_SIMPLEX  # Font for the text
 
         # Get text size for centering
@@ -172,23 +166,9 @@ class CarlaCameraClient:
         text_size_speed = cv2.getTextSize(speed_text, font, 1, 1)[0]
 
         # Draw text centered on the screen
-        cv2.putText(image, vehicle_name, (text_x - text_size_vehicle[0] // 2, text_y_start), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-        cv2.putText(image, id_text, (text_x - text_size_id[0] // 2, text_y_start + 30), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-        cv2.putText(image, speed_text, (text_x - text_size_speed[0] // 2, text_y_start + 60), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-
-        # Add icons to the image, centered
-        icon_x_start = text_x - len(self.icons) * 30  # Calculate starting x position to center the icons
-        for i, (name, icon) in enumerate(self.icons.items()):  # Iterate over loaded icons
-            if icon is not None:  # Check if the icon is loaded correctly
-                icon_h, icon_w, _ = icon.shape  # Get the icon dimensions
-                icon_x = icon_x_start + i * (icon_w + 10)  # Calculate the x position for the icon
-                alpha_s = icon[:, :, 3] / 255.0  # Get the alpha channel of the icon (transparency)
-                alpha_l = 1.0 - alpha_s  # Inverse alpha for the background
-
-                # Blend the icon with the image
-                for c in range(0, 3):  # Iterate over color channels
-                    image[icon_y:icon_y + icon_h, icon_x:icon_x + icon_w, c] = (alpha_s * icon[:, :, c] +
-                                                                                alpha_l * image[icon_y:icon_y + icon_h, icon_x:icon_x + icon_w, c])
+        cv2.putText(image, vehicle_name, (text_x - text_size_vehicle[0] // 2, 25), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(image, id_text, (text_x - text_size_id[0] // 2, 55), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(image, speed_text, (text_x - text_size_speed[0] // 2, text_y_start + 80), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
 
     def switch_vehicle(self):
         """Switch to the next available vehicle."""
