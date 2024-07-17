@@ -1,0 +1,72 @@
+<images>
+    <set name="vehicle.audi.a2">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>    
+    <set name="vehicle.audi.tt">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>
+    <set name="vehicle.jeep.wrangler_rubicon">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>    
+    <set name="vehicle.audi.impala">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>
+    <set name="vehicle.chevrolet.impala">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>    
+    <set name="vehicle.mini.cooper_s">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>
+    <set name="vehicle.mercedes.coupe">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>    
+    <set name="vehicle.volkswagen.t2">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>
+    <set name="vehicle.bmw.grandtourer">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>    
+    <set name="vehicle.citroen.c3">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>
+    <set name="vehicle.ford.mustang">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>    
+    <set name="vehicle.lincoln.mkz_2017">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>    
+    <set name="vehicle.nissan.patrol">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>    
+    <set name="vehicle.seat.leon">
+        <image file="battery-svgrepo-com.png" x="10" y="20"/>
+        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
+        <image file="idea-svgrepo-com.png" x="200" y="250"/>
+    </set>
+</images>
