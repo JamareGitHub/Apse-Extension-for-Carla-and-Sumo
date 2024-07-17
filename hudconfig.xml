@@ -1,72 +1,87 @@
-<images>
-    <set name="vehicle.audi.a2">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>    
-    <set name="vehicle.audi.tt">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>
-    <set name="vehicle.jeep.wrangler_rubicon">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>    
-    <set name="vehicle.audi.impala">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>
-    <set name="vehicle.chevrolet.impala">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>    
-    <set name="vehicle.mini.cooper_s">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>
-    <set name="vehicle.mercedes.coupe">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>    
-    <set name="vehicle.volkswagen.t2">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>
-    <set name="vehicle.bmw.grandtourer">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>    
-    <set name="vehicle.citroen.c3">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>
-    <set name="vehicle.ford.mustang">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>    
-    <set name="vehicle.lincoln.mkz_2017">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>    
-    <set name="vehicle.nissan.patrol">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>    
-    <set name="vehicle.seat.leon">
-        <image file="battery-svgrepo-com.png" x="10" y="20"/>
-        <image file="calendar-svgrepo-com.png" x="100" y="150"/>
-        <image file="idea-svgrepo-com.png" x="200" y="250"/>
-    </set>
-</images>
+<?xml version="1.0" encoding="UTF-8"?>
+<Vehicles>
+    <Vehicle type_id="vehicle.audi.a2">
+        <Brightness>1_very_dark</Brightness>
+        <Density>1_min</Density>
+        <Relevance>1_unimportant</Relevance>
+        <FoV>1_small</FoV>
+    </Vehicle>
+    <Vehicle type_id="vehicle.seat.leon">
+        <Brightness>2_dark</Brightness>
+        <Density>2_max</Density>
+        <Relevance>2_average</Relevance>
+        <FoV>2_large</FoV>
+    </Vehicle>    
+    <Vehicle type_id="vehicle.audi.tt">
+        <Brightness>3_average</Brightness>
+        <Density>1_min</Density>
+        <Relevance>3_important</Relevance>
+        <FoV>1_small</FoV>
+    </Vehicle>
+    <Vehicle type_id="vehicle.jeep.wrangler_rubicon">
+        <Brightness>4_bright</Brightness>
+        <Density>1_min</Density>
+        <Relevance>1_unimportant</Relevance>
+        <FoV>1_small</FoV>
+    </Vehicle>    
+    <Vehicle type_id="vehicle.audi.impala">
+        <Brightness>5_very_bright</Brightness>
+        <Density>1_min</Density>
+        <Relevance>1_unimportant</Relevance>
+        <FoV>1_small</FoV>
+    </Vehicle>
+    <Vehicle type_id="vehicle.chevrolet.impala">
+        <Brightness>1_very_dark</Brightness>
+        <Density>1_min</Density>
+        <Relevance>1_unimportant</Relevance>
+        <FoV>1_small</FoV>
+    </Vehicle>    
+    <Vehicle type_id="vehicle.mini.cooper_s">
+        <Brightness>1_very_dark</Brightness>
+        <Density>1_min</Density>
+        <Relevance>1_unimportant</Relevance>
+        <FoV>1_small</FoV>
+    </Vehicle>
+    <Vehicle type_id="vehicle.mercedes.coupe">
+        <Brightness>1_very_dark</Brightness>
+        <Density>1_min</Density>
+        <Relevance>1_unimportant</Relevance>
+        <FoV>1_small</FoV>
+    </Vehicle>    
+    <Vehicle type_id="vehicle.volkswagen.t2">
+        <Brightness>1_very_dark</Brightness>
+        <Density>1_min</Density>
+        <Relevance>1_unimportant</Relevance>
+        <FoV>1_small</FoV>
+    </Vehicle>
+    <Vehicle type_id="vehicle.bmw.grandtourer">
+        <Brightness>1_very_dark</Brightness>
+        <Density>1_min</Density>
+        <Relevance>1_unimportant</Relevance>
+        <FoV>1_small</FoV>
+    </Vehicle>    
+    <Vehicle type_id="vehicle.citroen.c3">
+        <Brightness>1_very_dark</Brightness>
+        <Density>1_min</Density>
+        <Relevance>1_unimportant</Relevance>
+        <FoV>1_small</FoV>
+    </Vehicle>
+    <Vehicle type_id="vehicle.ford.mustang">
+        <Brightness>1_very_dark</Brightness>
+        <Density>1_min</Density>
+        <Relevance>1_unimportant</Relevance>
+        <FoV>1_small</FoV>
+    </Vehicle>    
+    <Vehicle type_id="vehicle.lincoln.mkz_2017">
+        <Brightness>1_very_dark</Brightness>
+        <Density>1_min</Density>
+        <Relevance>1_unimportant</Relevance>
+        <FoV>1_small</FoV>
+    </Vehicle>    
+    <Vehicle type_id="vehicle.nissan.patrol">
+        <Brightness>1_very_dark</Brightness>
+        <Density>1_min</Density>
+        <Relevance>1_unimportant</Relevance>
+        <FoV>1_small</FoV>
+    </Vehicle>
+</Vehicles>
