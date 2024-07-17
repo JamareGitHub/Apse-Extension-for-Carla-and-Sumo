@@ -31,55 +31,55 @@
         <FoV>1_small</FoV>
     </Vehicle>
     <Vehicle type_id="vehicle.chevrolet.impala">
-        <Brightness>1_very_dark</Brightness>
+        <Brightness>3_average</Brightness>
         <Density>1_min</Density>
         <Relevance>1_unimportant</Relevance>
         <FoV>1_small</FoV>
     </Vehicle>    
     <Vehicle type_id="vehicle.mini.cooper_s">
-        <Brightness>1_very_dark</Brightness>
+        <Brightness>3_average</Brightness>
         <Density>1_min</Density>
         <Relevance>1_unimportant</Relevance>
         <FoV>1_small</FoV>
     </Vehicle>
     <Vehicle type_id="vehicle.mercedes.coupe">
-        <Brightness>1_very_dark</Brightness>
+        <Brightness>3_average</Brightness>
         <Density>1_min</Density>
         <Relevance>1_unimportant</Relevance>
         <FoV>1_small</FoV>
     </Vehicle>    
     <Vehicle type_id="vehicle.volkswagen.t2">
-        <Brightness>1_very_dark</Brightness>
+        <Brightness>3_average</Brightness>
         <Density>1_min</Density>
         <Relevance>1_unimportant</Relevance>
         <FoV>1_small</FoV>
     </Vehicle>
     <Vehicle type_id="vehicle.bmw.grandtourer">
-        <Brightness>1_very_dark</Brightness>
+        <Brightness>3_average</Brightness>
         <Density>1_min</Density>
         <Relevance>1_unimportant</Relevance>
         <FoV>1_small</FoV>
     </Vehicle>    
     <Vehicle type_id="vehicle.citroen.c3">
-        <Brightness>1_very_dark</Brightness>
+        <Brightness>3_average</Brightness>
         <Density>1_min</Density>
         <Relevance>1_unimportant</Relevance>
         <FoV>1_small</FoV>
     </Vehicle>
     <Vehicle type_id="vehicle.ford.mustang">
-        <Brightness>1_very_dark</Brightness>
+        <Brightness>3_average</Brightness>
         <Density>1_min</Density>
         <Relevance>1_unimportant</Relevance>
         <FoV>1_small</FoV>
     </Vehicle>    
     <Vehicle type_id="vehicle.lincoln.mkz_2017">
-        <Brightness>1_very_dark</Brightness>
+        <Brightness>3_average</Brightness>
         <Density>1_min</Density>
         <Relevance>1_unimportant</Relevance>
         <FoV>1_small</FoV>
     </Vehicle>    
     <Vehicle type_id="vehicle.nissan.patrol">
-        <Brightness>1_very_dark</Brightness>
+        <Brightness>3_average</Brightness>
         <Density>1_min</Density>
         <Relevance>1_unimportant</Relevance>
         <FoV>1_small</FoV>
