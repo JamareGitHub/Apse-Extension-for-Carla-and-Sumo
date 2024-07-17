@@ -6,9 +6,8 @@ import os
 import random
 import time
 import xml.dom.minidom as minidom
-from hud import HUD
-from tooltip import ToolTip
-
+import calculations
+from tkinter import ttk
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
 #carla_base_dir = r"F:\Softwareprojekt\CARLA_0.9.15\WindowsNoEditor"
@@ -27,20 +26,21 @@ maps = {
 
 hud_count = 0
 
+
 # Pfad zur vorhandenen XML-Datei mit vType-Elementen
 vtypes_xml_path = carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml"
 
-# Global variable to keep track of selected vehicle types
-selected_vehicle_types = set()
-
 def start_simulation():
+
+    global hud_count
 
     selected_index = map_list.curselection()
 
     hud_data = hudSelection()
+
     print("Gespeicherte HUD-Daten:")
-    for hud_id, data in hud_data.items():
-        print(f"{hud_id}: {data}")
+    for vehicle_type, data in hud_data.items():
+        print(f"{vehicle_type}: {data}")
 
     update_max_speeds(carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml",hud_data)
 
@@ -96,35 +96,51 @@ def start_simulation():
             except FileNotFoundError as e:
                 print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
             
-#ToDo: Use HUD class
+
 def hudSelection():
     experience_level = 5
     age = 30
 
+    # Dictionary to store HUD attributes
     hud_data = {}
 
-    for hud_frame in hud_frames:
-        probability = hud_frame['entry'].get()
-        brightness_level = hud_frame['brightness_var'].get()
-        information_density = hud_frame['density_var'].get()
-        information_relevance = hud_frame['relevance_var'].get()
-        fov_selection = hud_frame['fov_var'].get()
-        hud_id = hud_frame['hud_id']
+    for idx, hud in enumerate(hud_frames):
+        #probability = hud['entry'].get()
+        brightness_level = hud['brightness_var'].get()
+        information_density = hud['density_var'].get()
+        information_relevance = hud['relevance_var'].get()
+        fov_selection = hud['fov_var'].get()
+        vehicle_type = hud['vehicle_type'].get()
 
-        hud = HUD(hud_id, probability, brightness_level, information_density, information_relevance, fov_selection)
-        hud.calculate_metrics(experience_level, age)
-        hud_data[hud_id] = hud.get_data()
+        distraction_level = calculations.calc_distraction(information_relevance, fov_selection, information_density, brightness_level)
+        fatigueness_level = calculations.calc_fatigueness(information_relevance, fov_selection, information_density)
+        awareness_level = calculations.calc_awareness(fov_selection, information_relevance, information_density, distraction_level, fatigueness_level)
+        reactTime = calculations.calc_ReactTime(distraction_level, fatigueness_level, experience_level, awareness_level, age)
+        maxSpeed = calculations.calc_MaxSpeed(experience_level, awareness_level)
+        minGap = calculations.calc_MinGap(distraction_level, fatigueness_level, experience_level, awareness_level)
+        speedFactor = calculations.calc_SpeedAd(information_density, fov_selection, distraction_level, fatigueness_level, experience_level, awareness_level)
+
+
+        # Store the calculated values in the dictionary
+        hud_data[vehicle_type] = {
+            'reactTime': reactTime,
+            'fatigueness_level': fatigueness_level,
+            'awareness_level': awareness_level,
+            'max_speed': maxSpeed,
+            "min_Gap": minGap,
+            'vehicle_type': vehicle_type,
+            'speed_factor': speedFactor
+        }
 
     return hud_data
 
-#Updates the carlavtypes.rou.xml
 def update_max_speeds(xml_file_path, hud_data):
     # Parse the XML file
     tree = ET.parse(xml_file_path)
     root = tree.getroot()
 
     # Update maxSpeed, minGapLat, speedFactor, and add driverstate params for each HUD in hud_data
-    for hud_id, data in hud_data.items():
+    for vehicle_type, data in hud_data.items():
         max_speed = data['max_speed']
         minGap = data.get('min_Gap', '')  # Assuming 'min_Gap' might not always be present
         speedFactor = data.get('speed_factor', '')  # Assuming 'speed_factor' might not always be present
@@ -135,7 +151,7 @@ def update_max_speeds(xml_file_path, hud_data):
             vtype_id = vtype_elem.get('id')
 
             # Check if the vType id matches the current hud_id
-            if vtype_id == hud_id:
+            if vtype_id == vehicle_type:
                 # Update the maxSpeed, minGapLat, speedFactor attributes
                 vtype_elem.set('maxSpeed', str(max_speed))
                 vtype_elem.set('minGap', str(minGap))
@@ -157,7 +173,17 @@ def update_max_speeds(xml_file_path, hud_data):
     # Write the updated XML back to the file
     tree.write(xml_file_path, encoding='utf-8', xml_declaration=True)
 
-#Updates the .rou.xml
+
+def start_sumo(selected_sumocfg):
+    try:
+        # Starte SUMO mit der ausgewählten Konfigurationsdatei
+        subprocess.Popen(['sumo-gui', '-c', selected_sumocfg])
+        print(f"SUMO Simulation gestartet mit Konfigurationsdatei: {selected_sumocfg}")
+        
+    except FileNotFoundError:
+        print("SUMO konnte nicht gefunden werden. Stelle sicher, dass der Pfad korrekt ist.")
+
+
 def modify_vehicle_routes(selected_map):
     original_routes_file = os.path.join(sumo_base_dir, "examples", "rou", selected_map + ".rou.xml")
 
@@ -171,9 +197,10 @@ def modify_vehicle_routes(selected_map):
         probabilities = []
 
         for hud in hud_frames:
-            hud_id = hud['hud_id']
             probability = float(hud['entry'].get())  # Wahrscheinlichkeit aus dem Eingabefeld
-            vehicle_types.append(hud_id)
+            vehicle_type = hud['vehicle_type'].get()  # Ausgewählter Fahrzeugtyp
+
+            vehicle_types.append(vehicle_type)
             probabilities.append(probability)
 
         # Fahrzeugtypen den Fahrzeugen in der Route zuweisen
@@ -181,127 +208,108 @@ def modify_vehicle_routes(selected_map):
             if vehicle_types:
                 vehicle_type = random.choices(vehicle_types, probabilities)[0]  # Wählt basierend auf Wahrscheinlichkeiten aus
                 vehicle.set('type', vehicle_type)
-            else:
-                print("Keine verfügbaren HUD-IDs mehr für Fahrzeuge.")
 
-        # Geändertes XML-Dokument speichern (Überschreiben der Originaldatei)
-        tree.write(original_routes_file, encoding="UTF-8", xml_declaration=True)
-        print(f"Modifizierte XML-Datei gespeichert unter: {original_routes_file}")
+        # Änderungen in die Datei schreiben
+        tree.write(original_routes_file)
 
-    except ET.ParseError as e:
-        print(f"Fehler beim Parsen der XML-Datei {original_routes_file}: {e}")
-    except FileNotFoundError as e:
-        print(f"Die Datei {original_routes_file} wurde nicht gefunden: {e}")
-
-       
-def start_sumo(selected_sumocfg):
-    try:
-        # Starte SUMO mit der ausgewählten Konfigurationsdatei
-        subprocess.Popen(['sumo-gui', '-c', selected_sumocfg])
-        print(f"SUMO Simulation gestartet mit Konfigurationsdatei: {selected_sumocfg}")
-        
     except FileNotFoundError:
-        print("SUMO konnte nicht gefunden werden. Stelle sicher, dass der Pfad korrekt ist.")
-
+        print(f"Datei {original_routes_file} nicht gefunden.")
 
 # Funktion zum Schließen des Hauptfensters
 def close_window():
     root.destroy()
 
-
-type_list = ["vehicle.audi.a2","vehicle.audi.tt","vehicle.jeep.wrangler_rubicon","vehicle.chevrolet.impala", "vehicle.mini.cooper_s", "vehicle.mercedes.coupe", "vehicle.bmw.grandtourer",
-            "vehicle.citroen.c3", "vehicle.ford.mustang", "vehicle.volkswagen.t2", "vehicle.lincoln.mkz_2017", "vehicle.seat.leon", "vehicle.nissan.patrol"]
-
 def add_hud():
     global hud_count
-    hud_id = type_list[0]
-    
-    hud_idx = len(hud_frames) + 1
-    hud_frame = create_hud_frame(hud_idx, hud_count)
-    hud_frames.append(hud_frame)
-    hud_frame['frame'].pack(pady=10, padx=20, ipadx=10, ipady=10, fill="x")
-
-    type_name = type_list[0]
-
-    update_list(type_name)  # Aktualisiere die verfügbaren HUD-Typen
-    update_dropdown_options()  
-
-    update_scrollregion()
-    print("Created HUD No. " + str(hud_count) + " with HUD Type " + hud_id)
     hud_count += 1
 
+    if len(objects) >= len(available_vehicle_types):
+        print("Keine weiteren Objekte können hinzugefügt werden, da keine Optionen mehr verfügbar sind.")
+        messagebox.showwarning("Keine verfügbaren IDs", "Es sind keine weiteren HUD-IDs verfügbar.")
+        return
+    
+    hud_idx = len(hud_frames) + 1
 
-def update_list(type_name):
-    global type_list
-    print(hud_count)
-    print(type_list[0])
-    type_list.remove(type_name)  # Entferne den ausgewählten Typ aus der Liste
-    print(type_list)
-
-     
-# Funktion zum Entfernen eines HUDs
+    hud_frame = create_hud_frame(hud_idx)
+    hud_frames.append(hud_frame)
+    hud_frame['frame'].pack(pady=10, padx=20, ipadx=10, ipady=10, fill="x")
+    update_scrollregion()
+    print("Added HUD: " + str(hud_idx))
+    
+# Globale Liste der verfügbaren Fahrzeugtypen
+available_vehicle_types = [
+    "vehicle.audi.a2", "vehicle.audi.tt", "vehicle.jeep.wrangler_rubicon",
+    "vehicle.chevrolet.impala", "vehicle.mini.cooper_s", "vehicle.mercedes.coupe",
+    "vehicle.bmw.grandtourer", "vehicle.citroen.c3", "vehicle.ford.mustang",
+    "vehicle.volkswagen.t2", "vehicle.lincoln.mkz_2017", "vehicle.seat.leon",
+    "vehicle.nissan.patrol"
+]
+   
 def remove_hud(hud_frame, hud_id):
     global hud_count
 
-    if (hud_count > 1):
+    if hud_count > 1:
         hud_count -= 1
 
         for idx, hud in enumerate(hud_frames):
             if hud['frame'] == hud_frame:
                 hud_frames.remove(hud)
                 hud_frame.destroy()
-                # Füge die ID wieder der Liste der verfügbaren HUD-IDs hinzu
-                #available_hud_ids.append(hud_id)
-                #available_hud_ids.sort()  # Optional: Sortiere die IDs für Konsistenz
+                
+                type = hud['vehicle_type'].get()
+                if type in available_vehicle_types:
+                    available_vehicle_types.append(type)
+                
                 update_hud_names()
                 update_scrollregion()
                 break
-        update_dropdown_options()
     else:
         messagebox.showwarning("Achtung", "Mindestens ein HUD muss in der Liste verbleiben.")
 
-def update_dropdown_options():
-    # Update the dropdown options for all HUDs based on selected_vehicle_types
-    for hud_frame in hud_frames:
-        dropdown = hud_frame['type_menu']
-        current_selection = hud_frame['type_var'].get()
+def on_selection(event):
+    dropdown = event.widget
+    selected_value = dropdown.get()
+    
+    # Finde das entsprechende Objekt und aktualisiere den gespeicherten Wert
+    for i, (label, combobox, previous_value) in enumerate(objects):
+        if combobox == dropdown:
+            # Wenn ein vorheriger Wert vorhanden war, füge ihn zurück zur Liste hinzu
+            if previous_value and previous_value not in available_vehicle_types:
+                available_vehicle_types.append(previous_value)
+            
+            # Entferne den neuen Wert aus der Liste
+            if selected_value in available_vehicle_types:
+                available_vehicle_types.remove(selected_value)
+            
+            # Aktualisiere den gespeicherten Wert im Objekt
+            objects[i] = (label, combobox, selected_value)
+            break
+    
+    # Aktualisiere alle Dropdown-Menüs
+    update_comboboxes()
 
-        # Get available vehicle types that are not already selected
-        available_vehicle_types = [vehicle_type for vehicle_type in type_list if vehicle_type not in selected_vehicle_types or vehicle_type == current_selection]
-
-        # Update the dropdown menu
-        dropdown['menu'].delete(0, 'end')
-        for vehicle_type in available_vehicle_types:
-            dropdown['menu'].add_command(label=vehicle_type, command=lambda v=vehicle_type, d=dropdown: dropdown.setvar(dropdown.cget("textvariable"), value=v))
-
-
-
-
-def update_hud_types(available_hud_types):
-    list_hud_types = available_hud_types
-    print(list_hud_types)
-    return list_hud_types
-
+def update_comboboxes():
+    for _, dropdown, _ in objects:
+        if dropdown.winfo_exists():  # Überprüfen, ob das Widget existiert
+            dropdown['values'] = available_vehicle_types
 
 # Funktion zur Aktualisierung der HUD-Namen nach Entfernen eines HUDs
 def update_hud_names():
     for hud_idx, hud_frame in enumerate(hud_frames, start=1):
         hud_frame['header'].configure(text=f"HUD {hud_idx}")
 
-# Funktion zur Erstellung des Frames für ein HUD
-def create_hud_frame(hud_number, hud_id):
+
+def create_hud_frame(hud_number):
     frame = tk.Frame(scrollable_frame, bg="white", bd=2, relief="raised")
 
     '''
     header = tk.Label(frame, text=f"HUD {hud_number}", font=('Helvetica', 12, 'bold'), bg="white")
     header.grid(row=0, column=0, columnspan=3, pady=10, sticky='n')
     '''
-
     header_entry = tk.Entry(frame, width=20, font=('Helvetica', 14, 'bold'))
     header_entry.insert(0, f"HUD {hud_number}")
     header_entry.grid(row=0, column=0,pady=10, sticky='n' )
-    
-    #Probability
+
     label_prob = tk.Label(frame, text="Wahrscheinlichkeit eingeben:", bg="white")
     label_prob.grid(row=1, column=0, pady=5, padx=10, sticky='w')
     entry = tk.Entry(frame, width=15)
@@ -315,83 +323,79 @@ def create_hud_frame(hud_number, hud_id):
     prob_question_button.bind("<Enter>", lambda event, tooltip=prob_tooltip: tooltip.show_tooltip())
     prob_question_button.bind("<Leave>", lambda event, tooltip=prob_tooltip: tooltip.hide_tooltip())
 
-    #Vehicle Type
-    label_type = tk.Label(frame, text="Choose the vehicle type:", bg="white")
-    label_type.grid(row=2, column= 0, pady=5, padx=10, sticky='w')
-    
-    type_var = tk.StringVar(frame)
-    type_var.set(type_list[0])
-    type_menu = tk.OptionMenu(frame, type_var, *type_list)
-    type_menu.grid(row = 2, column= 1, pady= 5, padx= 10, sticky= 'w')
-
-    type_tooltip = ToolTip(type_menu, "Chooses the vehicle type that displays the HUD in the Carla Simulation")
-    type_question_button = tk.Button(frame, text="?", command=type_tooltip.show_tooltip, width=3)
-    type_question_button.grid(row= 2, column=2, padx=5)
-    type_question_button.bind("<Enter>", lambda event, tooltip=type_tooltip: tooltip.show_tooltip())
-    type_question_button.bind("<Leave>", lambda event, tooltip=type_tooltip: tooltip.hide_tooltip())
-
-    #Brightness
     label_brightness = tk.Label(frame, text="Helligkeitsniveau auswählen:", bg="white")
-    label_brightness.grid(row=3, column=0, pady=5, padx=10, sticky='w')
+    label_brightness.grid(row=2, column=0, pady=5, padx=10, sticky='w')
     brightness_var = tk.StringVar(frame)
     brightness_var.set(brightness_level[2])
     brightness_menu = tk.OptionMenu(frame, brightness_var, *brightness_level)
-    brightness_menu.grid(row=3, column=1, pady=5, padx=10, sticky='w')
+    brightness_menu.grid(row=2, column=1, pady=5, padx=10, sticky='w')
 
     brightness_tooltip = ToolTip(brightness_menu, "Helligkeitsniveau des HUDs.")
 
     brightness_question_button = tk.Button(frame, text="?", command=brightness_tooltip.show_tooltip, width=3)
-    brightness_question_button.grid(row=3, column=2, padx=5)
+    brightness_question_button.grid(row=2, column=2, padx=5)
     brightness_question_button.bind("<Enter>", lambda event, tooltip=brightness_tooltip: tooltip.show_tooltip())
     brightness_question_button.bind("<Leave>", lambda event, tooltip=brightness_tooltip: tooltip.hide_tooltip())
 
-    #Density
     label_density = tk.Label(frame, text="Informationsdichte für HUD auswählen:", bg="white")
-    label_density.grid(row=4, column=0, pady=5, padx=10, sticky='w')
+    label_density.grid(row=3, column=0, pady=5, padx=10, sticky='w')
     density_var = tk.StringVar(frame)
     density_var.set(information_density[1])
     density_menu = tk.OptionMenu(frame, density_var, *information_density)
-    density_menu.grid(row=4, column=1, pady=5, padx=10, sticky='w')
+    density_menu.grid(row=3, column=1, pady=5, padx=10, sticky='w')
 
     density_tooltip = ToolTip(density_menu, "Informationsdichte des HUDs.")
 
     density_question_button = tk.Button(frame, text="?", command=density_tooltip.show_tooltip, width=3)
-    density_question_button.grid(row=4, column=2, padx=5)
+    density_question_button.grid(row=3, column=2, padx=5)
     density_question_button.bind("<Enter>", lambda event, tooltip=density_tooltip: tooltip.show_tooltip())
     density_question_button.bind("<Leave>", lambda event, tooltip=density_tooltip: tooltip.hide_tooltip())
 
-    #Relevancr
     label_relevance = tk.Label(frame, text="Informationsrelevanz für HUD auswählen:", bg="white")
-    label_relevance.grid(row=5, column=0, pady=5, padx=10, sticky='w')
+    label_relevance.grid(row=4, column=0, pady=5, padx=10, sticky='w')
     relevance_var = tk.StringVar(frame)
     relevance_var.set(information_relevance[1])
     relevance_menu = tk.OptionMenu(frame, relevance_var, *information_relevance)
-    relevance_menu.grid(row=5, column=1, pady=5, padx=10, sticky='w')
+    relevance_menu.grid(row=4, column=1, pady=5, padx=10, sticky='w')
 
     relevance_tooltip = ToolTip(relevance_menu, "Informationsrelevanz des HUDs.")
 
     relevance_question_button = tk.Button(frame, text="?", command=relevance_tooltip.show_tooltip, width=3)
-    relevance_question_button.grid(row=5, column=2, padx=5)
+    relevance_question_button.grid(row=4, column=2, padx=5)
     relevance_question_button.bind("<Enter>", lambda event, tooltip=relevance_tooltip: tooltip.show_tooltip())
     relevance_question_button.bind("<Leave>", lambda event, tooltip=relevance_tooltip: tooltip.hide_tooltip())
 
-    #FoV
     label_fov = tk.Label(frame, text="Field of View für HUD auswählen:", bg="white")
-    label_fov.grid(row=6, column=0, pady=5, padx=10, sticky='w')
+    label_fov.grid(row=5, column=0, pady=5, padx=10, sticky='w')
     fov_var = tk.StringVar(frame)
     fov_var.set(fov[1])
     fov_menu = tk.OptionMenu(frame, fov_var, *fov)
-    fov_menu.grid(row=6, column=1, pady=5, padx=10, sticky='w')
+    fov_menu.grid(row=5, column=1, pady=5, padx=10, sticky='w')
 
     fov_tooltip = ToolTip(fov_menu, "FoV des HUDs.")
 
     fov_question_button = tk.Button(frame, text="?", command=fov_tooltip.show_tooltip, width=3)
-    fov_question_button.grid(row=6, column=2, padx=5)
+    fov_question_button.grid(row=5, column=2, padx=5)
     fov_question_button.bind("<Enter>", lambda event, tooltip=fov_tooltip: tooltip.show_tooltip())
     fov_question_button.bind("<Leave>", lambda event, tooltip=fov_tooltip: tooltip.hide_tooltip())
 
-    remove_button = tk.Button(frame, text="HUD entfernen", command=lambda: remove_hud(frame, hud_id), bg="#ff6347", fg="white")
+    # Dropdown-Menü für Fahrzeugtyp (nur verfügbare Typen anzeigen)
+    label_vehicle_type = tk.Label(frame, text="Fahrzeugtyp auswählen:", bg="white")
+    label_vehicle_type.grid(row=6, column=0, pady=5, padx=10, sticky='w')
+
+    vehicle_type = tk.StringVar(frame)
+    vehicle_type_menu = ttk.Combobox(frame, textvariable=vehicle_type, values=available_vehicle_types, state="readonly", postcommand=lambda: dropdown_opened(vehicle_type_menu))
+    vehicle_type_menu.grid(row=6, column=1, pady=5, padx=10, sticky='w')
+
+    # Binde die Auswahländerung an den Eventhandler
+    vehicle_type_menu.bind('<<ComboboxSelected>>', on_selection)
+    
+    # Speichere das neue Objekt und den initialen Wert (leer)
+    objects.append((label_vehicle_type, vehicle_type_menu, ""))
+
+    remove_button = tk.Button(frame, text="HUD entfernen", command=lambda: remove_hud(frame, hud_number), bg="#ff6347", fg="white")
     remove_button.grid(row=7, column=0, columnspan=3, pady=10)
+    print("Created HUD: " + str(hud_number))
 
     return {
         'frame': frame,
@@ -401,10 +405,47 @@ def create_hud_frame(hud_number, hud_id):
         'density_var': density_var,
         'relevance_var': relevance_var,
         'fov_var': fov_var,
-        'type_var': type_var,
-        'type_menu': type_menu,
-        'hud_id': hud_id
+        'vehicle_type': vehicle_type,
+        'hud_id': hud_number
     }
+
+objects=[]
+
+def dropdown_opened(dropdown):
+    print("Das Dropdown-Menü wurde geöffnet!")
+    dropdown['values'] = available_vehicle_types  # Aktualisiere die Werte des Dropdown-Menüs
+
+def getList():
+    return available_vehicle_types
+
+# ToolTip Klasse zur Erstellung der Tooltip-Fenster
+class ToolTip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip_window = None
+
+    def show_tooltip(self, event=None):
+        x, y, _, _ = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 25
+
+        # Erstellt das Tooltip-Fenster, wenn noch nicht vorhanden
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+        self.tooltip_window = tk.Toplevel(self.widget)
+        self.tooltip_window.wm_overrideredirect(True)
+        self.tooltip_window.wm_geometry(f"+{x}+{y}")
+
+        label = tk.Label(self.tooltip_window, text=self.text, justify='left',
+                         background='#ffffe0', relief='solid', borderwidth=1,
+                         wraplength=200)
+        label.pack(ipadx=1)
+
+    def hide_tooltip(self, event=None):
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+            self.tooltip_window = None
 
 # Funktion zur Aktualisierung der Scrollregion des Canvas
 def update_scrollregion():
@@ -474,8 +515,6 @@ brightness_level = ["Sehr dunkel", "Dunkel", "Moderat", "Hell", "Sehr hell"]
 information_density = ["Minimum", "Moderat", "Maximum"]
 information_relevance = ["Unwichtig", "Neutral", "Wichtig"]
 fov = ["Small", "Medium", "Large"]
-type_list = ["vehicle.audi.a2","vehicle.audi.tt","vehicle.jeep.wrangler_rubicon","vehicle.chevrolet.impala", "vehicle.mini.cooper_s", "vehicle.mercedes.coupe", "vehicle.bmw.grandtourer",
-            "vehicle.citroen.c3", "vehicle.ford.mustang", "vehicle.volkswagen.t2", "vehicle.lincoln.mkz_2017", "vehicle.seat.leon", "vehicle.nissan.patrol"]
 
 # Liste für HUD Frames
 hud_frames = []
