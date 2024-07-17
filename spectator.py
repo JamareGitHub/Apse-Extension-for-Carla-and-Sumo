@@ -47,6 +47,7 @@ class CarlaCameraClient:
             'icon_speaker': ('speaker-svgrepo-com.png', (0.40, 0.65)),
             # Add more icons as needed
         }  
+        self.show_speed_text = True
         self.show_icon_battery = True
         self.show_icon_calendar = True
         self.show_icon_clock = True
@@ -141,7 +142,6 @@ class CarlaCameraClient:
         if self.image_data is not None:
             
             hud_image = self.image_data.copy()# Create a copy of the image to draw the HUD
-            self.get_vehicle_speed()# Get the vehicle speed
             self.add_hud(hud_image)# Overlay the HUD on the copy of the image
             cv2.imshow('Camera Output', hud_image)# Display the combined image
 
@@ -180,20 +180,25 @@ class CarlaCameraClient:
         text_x = w // 2  # Center the text horizontally
         text_y_start = h // 2 - 30  # Center the text vertically, starting above the center
 
+        
+
         vehicle_name = f"Vehicle type: {self.vehicle.type_id}"  # Vehicle type text
         id_text = f"Vehicle ID: {self.vehicle.id}"  # Vehicle ID text
-        speed_text = f"{round(self.speed)} km/h"  # Speed text
         font = cv2.FONT_HERSHEY_SIMPLEX  # Font for the text
 
         # Get text size for centering
         text_size_vehicle = cv2.getTextSize(vehicle_name, font, 1, 1)[0]
         text_size_id = cv2.getTextSize(id_text, font, 1, 1)[0]
-        text_size_speed = cv2.getTextSize(speed_text, font, 1, 1)[0]
 
         # Draw text centered on the screen
         cv2.putText(image, vehicle_name, (text_x - text_size_vehicle[0] // 2, 25), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
         cv2.putText(image, id_text, (text_x - text_size_id[0] // 2, 55), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-        cv2.putText(image, speed_text, (text_x - text_size_speed[0] // 2, text_y_start + 80), font, 1, (0, 0, 0), 2, cv2.LINE_AA)
+        
+        if self.show_speed_text:
+            self.get_vehicle_speed()# Get the vehicle speed
+            speed_text = f"{round(self.speed)} km/h"  # Speed text
+            text_size_speed = cv2.getTextSize(speed_text, font, 1, 1)[0]
+            cv2.putText(image, speed_text, (text_x - text_size_speed[0] // 2, text_y_start + 80), font, 1, (0, 0, 0), 2, cv2.LINE_AA)
 
         self.add_icons(image, h, w)
 
