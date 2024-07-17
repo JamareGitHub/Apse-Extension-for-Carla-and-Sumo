@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import os
 import time
-import math
+import xml.etree.ElementTree as ET
 
 from collections import deque
 
@@ -37,31 +37,122 @@ class CarlaCameraClient:
         #icons
         self.icon_path = "icons/"
         self.icons = {
-            'icon_battery': ('battery-svgrepo-com.png', (0.40, 0.3)),#höhe , breite
-            'icon_calendar': ('calendar-svgrepo-com.png', (0.40, 0.35)),
-            'icon_clock': ('clock-svgrepo-com.png', (0.40, 0.4)),
-            'icon_idea': ('idea-svgrepo-com.png', (0.40, 0.45)),#höhe , breite
-            'icon_music_player': ('music-player-svgrepo-com.png', (0.40, 0.5)),
-            'icon_navigation': ('navigation-svgrepo-com.png', (0.40, 0.55)),
-            'icon_smartphone': ('smartphone-svgrepo-com.png', (0.40, 0.6)),#höhe , breite
-            'icon_speaker': ('speaker-svgrepo-com.png', (0.40, 0.65)),
+            'icon_battery': ('battery-svgrepo-com.png', (0.60, 0.3)),#höhe , breite
+            'icon_calendar': ('calendar-svgrepo-com.png', (0.60, 0.35)),
+            'icon_clock': ('clock-svgrepo-com.png', (0.50, 0.35)),
+            'icon_music_player': ('music-player-svgrepo-com.png', (0.60, 0.55)),
+            'icon_smartphone': ('smartphone-svgrepo-com.png', (0.60, 0.6)),
+            'icon_speaker': ('speaker-svgrepo-com.png', (0.50, 0.5)),
+            'icon_compass': ('compass-svgrepo-com.png', (0.50, 0.4)),
+            'icon_placeholder': ('placeholder-svgrepo-com.png', (0.50, 0.55)),
+
+
+            'icon_idea': ('idea-svgrepo-com.png', (0.60, 0.4)),
+            'icon_minus': ('minus-svgrepo-com.png', (0.50, 0.45)),
+            'icon_stopwatch': ('stopwatch-svgrepo-com.png', (0.60, 0.45)),
+            'icon_navigation': ('navigation-svgrepo-com.png', (0.60, 0.5)),
+
             # Add more icons as needed
         }  
-        self.show_speed_text = True
-        self.show_icon_battery = True
-        self.show_icon_calendar = True
-        self.show_icon_clock = True
-        self.show_icon_idea = True
-        self.show_icon_music_player = True
-        self.show_icon_navigation = True
-        self.show_icon_smartphone = True
-        self.show_icon_speaker = True
+        self.show_speed_text = False
+        self.show_icon_stopwatch = False
+
+        self.show_icon_battery = False
+        self.show_icon_calendar = False
+        self.show_icon_clock = False
+        self.show_icon_idea = False
+        self.show_icon_music_player = False
+        self.show_icon_navigation = False
+        self.show_icon_smartphone = False
+        self.show_icon_speaker = False
+        self.show_icon_compass = False
+        self.show_icon_minus = False
+        self.show_icon_placeholder = False
         self.hud_alpha = 1
         self.iconscale = (90,90)
 
         # Initialize OpenCV window
         cv2.namedWindow('Camera Output', cv2.WINDOW_NORMAL)
+        
+        #Initialize with the XML configuration file
+        self.hud_xml_config = self.load_xml_config("hudconfig.xml")
 
+    def load_xml_config(self, xml_file):
+        """Load the XML configuration file."""
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+        config = {}
+        for vehicle in root.findall('Vehicle'):
+            type_id = vehicle.get('type_id')
+            if type_id:
+                brightness = vehicle.find('Brightness').text
+                density = vehicle.find('Density').text
+                relevance = vehicle.find('Relevance').text
+                fov = vehicle.find('FoV').text
+                config[type_id] = {
+                    'Brightness': brightness,
+                    'Density': density,
+                    'Relevance': relevance,
+                    'FoV': fov
+                }
+        return config
+    
+    def set_xml_config(self, vehicle):
+        if vehicle.type_id in self.hud_xml_config:
+            config = self.hud_xml_config[vehicle.type_id]
+            brightness = config.get('Brightness')
+            density = config.get('Density')
+            relevance = config.get('Relevance')
+            fov = config.get('FoV')
+
+            
+            self.show_speed_text = True #always show speed if hud is active
+            self.show_icon_stopwatch = True
+
+            if brightness == "1_very_dark":
+                self.hud_alpha = 0.1
+            elif brightness == "2_dark":
+                self.hud_alpha = 0.3
+            elif brightness == "3_average":
+                self.hud_alpha = 0.5
+            elif brightness == "4_bright":
+                self.hud_alpha = 0.7
+            elif brightness == "5_very_bright":
+                self.hud_alpha = 1
+
+            if relevance == "1_unimportant":
+                self.show_speed_text = True
+                self.show_icon_battery = True
+                self.show_icon_calendar = True
+                self.show_icon_clock = True
+                self.show_icon_idea = True
+                self.show_icon_music_player = True
+                self.show_icon_navigation = True
+                self.show_icon_smartphone = True
+                self.show_icon_speaker = True
+                self.show_icon_compass = True
+                self.show_icon_minus = True
+                self.show_icon_placeholder = True
+            elif relevance == "2_average":
+                self.show_speed_text = True
+                self.show_icon_clock = True
+                self.show_icon_idea = True
+                self.show_icon_music_player = True
+                self.show_icon_navigation = True
+                self.show_icon_compass = True
+                self.show_icon_minus = True
+            elif relevance == "3_important":
+                self.show_speed_text = True
+                self.show_icon_navigation = True
+                self.show_icon_minus = True 
+                self.show_icon_idea = True
+
+
+
+
+
+        else:
+            self.reset_hud()
 
     def get_all_vehicles(self):
         """Retrieve all vehicles in the world."""
@@ -82,8 +173,27 @@ class CarlaCameraClient:
         self.previous_location_timestamp = None
         self.speed_history.clear()
         self.smoothing_timestamp = None
+        self.reset_hud()
 
-    def set_first_person_cameralocation(self, vehicle):
+    def reset_hud(self):
+        self.show_speed_text = False
+        self.show_icon_stopwatch = False
+
+        self.show_icon_battery = False
+        self.show_icon_calendar = False
+        self.show_icon_clock = False
+        self.show_icon_idea = False
+        self.show_icon_music_player = False
+        self.show_icon_navigation = False
+        self.show_icon_smartphone = False
+        self.show_icon_speaker = False
+        self.show_icon_compass = False
+        self.show_icon_minus = False
+        self.show_icon_placeholder = False
+        self.hud_alpha = 1
+        self.iconscale = (90,90)
+
+    def set_vehicle_configuration(self, vehicle):
         """Set the first-person camera location based on vehicle type."""
         vehicle_name = vehicle.type_id
         if vehicle_name == "vehicle.audi.a2":
@@ -124,7 +234,7 @@ class CarlaCameraClient:
         camera_bp.set_attribute('image_size_y', self.image_resolution_y)
         camera_bp.set_attribute('fov', '90')
 
-        self.set_first_person_cameralocation(vehicle)
+        self.set_vehicle_configuration(vehicle)
         camera_transform = carla.Transform(carla.Location(x=self.first_person_location[0], y=self.first_person_location[1], z=self.first_person_location[2]))
         self.camera = self.world.spawn_actor(camera_bp, camera_transform, attach_to=vehicle)
         self.camera.listen(lambda image: self.process_image(image))
@@ -196,9 +306,9 @@ class CarlaCameraClient:
         
         if self.show_speed_text:
             self.get_vehicle_speed()# Get the vehicle speed
-            speed_text = f"{round(self.speed)} km/h"  # Speed text
+            speed_text = f"{round(self.speed)}"  # Speed text
             text_size_speed = cv2.getTextSize(speed_text, font, 1, 1)[0]
-            cv2.putText(image, speed_text, (text_x - text_size_speed[0] // 2, text_y_start + 80), font, 1, (0, 0, 0), 2, cv2.LINE_AA)
+            cv2.putText(image, speed_text, ((text_x - text_size_speed[0] // 2) -47, text_y_start + 225), font, 0.75, (0, 0, 0), 2, cv2.LINE_AA)
 
         self.add_icons(image, h, w)
 
@@ -242,7 +352,7 @@ class CarlaCameraClient:
             try:
                 print(f"Switching to vehicle {vehicle.type_id} at {vehicle.get_location()}")
                 self.attach_camera_to_vehicle(vehicle)
-                print("Vehicle switched and sensors attached.")
+                self.set_xml_config(vehicle)
                 break  # Exit the loop if switching was successful
             except Exception as e:
                 print(f"Error switching to vehicle: {str(e)}")
@@ -290,5 +400,6 @@ if __name__ == '__main__':
         client.run()
     except Exception as e:
         print(f"An error occurred: {e}")
-        if client:
-            client.cleanup()
+        exit()
+    if client:
+        client.cleanup()
