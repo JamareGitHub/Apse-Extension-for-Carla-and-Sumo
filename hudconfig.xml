@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<Vehicles>
+    <Vehicle type_id="vehicle.audi.a2">
+        <Brightness>Moderat</Brightness>
+        <Density>Moderat</Density>
+        <Relevance>Neutral</Relevance>
+        <FoV>Medium</FoV>
+    </Vehicle>
+    <Vehicle type_id="vehicle.audi.tt">
+        <Brightness>Moderat</Brightness>
+        <Density>Moderat</Density>
+        <Relevance>Neutral</Relevance>
+        <FoV>Medium</FoV>
+    </Vehicle>
+    <Vehicle type_id="vehicle.jeep.wrangler_rubicon">
+        <Brightness>Moderat</Brightness>
+        <Density>Moderat</Density>
+        <Relevance>Neutral</Relevance>
+        <FoV>Medium</FoV>
+    </Vehicle>
+</Vehicles>

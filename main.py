@@ -1,13 +1,16 @@
 import tkinter as tk
 import subprocess
 import xml.etree.ElementTree as ET
-from tkinter import filedialog, messagebox
+from tkinter import messagebox
 import os
 import random
 import time
-import xml.dom.minidom as minidom
 import calculations
 from tkinter import ttk
+import xml.etree.cElementTree as ET
+import xml.dom.minidom as minidom
+from dicttoxml import dicttoxml
+from xmler import dict2xml
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
 #carla_base_dir = r"F:\Softwareprojekt\CARLA_0.9.15\WindowsNoEditor"
@@ -32,17 +35,22 @@ vtypes_xml_path = carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.
 
 def start_simulation():
 
+    xml_path = r"hudconfig.xml"
+
     global hud_count
 
     selected_index = map_list.curselection()
 
     hud_data = hudSelection()
+    xml_data = XML_selection()
 
     print("Gespeicherte HUD-Daten:")
     for vehicle_type, data in hud_data.items():
         print(f"{vehicle_type}: {data}")
 
     update_max_speeds(carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml",hud_data)
+
+    writeXML(xml_data)
 
     if selected_index:
         selected_map = map_list.get(selected_index[0])
@@ -129,10 +137,35 @@ def hudSelection():
             'max_speed': maxSpeed,
             "min_Gap": minGap,
             'vehicle_type': vehicle_type,
-            'speed_factor': speedFactor
+            'speed_factor': speedFactor,
+            'brightness' : brightness_level
         }
 
     return hud_data
+
+def XML_selection():
+    # Dictionary to store HUD attributes
+    xml_data = {}
+
+    for idx, hud in enumerate(hud_frames):
+        #probability = hud['entry'].get()
+        brightness_level = hud['brightness_var'].get()
+        information_density = hud['density_var'].get()
+        information_relevance = hud['relevance_var'].get()
+        fov_selection = hud['fov_var'].get()
+        vehicle_type = hud['vehicle_type'].get()
+
+
+        # Store the calculated values in the dictionary
+        xml_data[vehicle_type] = {
+            'Brightness' : brightness_level,
+            'Density': information_density,
+            'Relevance': information_relevance,
+            'FoV': fov_selection
+        }
+
+    return xml_data
+
 
 def update_max_speeds(xml_file_path, hud_data):
     # Parse the XML file
@@ -173,6 +206,32 @@ def update_max_speeds(xml_file_path, hud_data):
     # Write the updated XML back to the file
     tree.write(xml_file_path, encoding='utf-8', xml_declaration=True)
 
+def prettify(elem):
+    """Return a pretty-printed XML string for the Element."""
+    rough_string = ET.tostring(elem, 'utf-8')
+    reparsed = minidom.parseString(rough_string)
+    return reparsed.toprettyxml(indent="    ")  # Adjust the indentation level as needed
+
+def writeXML(hud_data):
+
+    xml_path = "hudconfig.xml"
+    # Create the root element
+    root = ET.Element("Vehicles")
+
+    # Create XML structure
+    for vehicle_type, attributes in hud_data.items():
+        vehicle_elem = ET.SubElement(root, "Vehicle", type_id=vehicle_type)
+        for key, value in attributes.items():
+            ET.SubElement(vehicle_elem, key).text = str(value)
+
+    # Pretty print the XML
+    xml_str = prettify(root)
+
+    # Write to XML file
+    with open(xml_path, "w", encoding="utf-8") as f:
+        f.write(xml_str)
+
+    print(f"XML file created successfully at {xml_path}")
 
 def start_sumo(selected_sumocfg):
     try:
