@@ -20,6 +20,7 @@ class CarlaCameraClient:
         self.image_data = None
         self.exit_flag = False
 
+        #speed
         self.speed = 0.0  # Store the speed of the vehicle
         self.current_location = None  # Track current location for speed calculation
         self.previous_location = None  # Track previous location for speed calculation
@@ -28,10 +29,34 @@ class CarlaCameraClient:
         self.speed_history = deque(maxlen=100)  # Store the last 5 speed measurements for smoothing
         self.smoothing_timestamp = None
 
-
+        #camera
         self.first_person_location = [-.1, -.3, 1.3]  # Camera position
         self.image_resolution_x = '1920'
         self.image_resolution_y = '1080'
+
+        #icons
+        self.icon_path = "icons/"
+        self.icons = {
+            'icon_battery': ('battery-svgrepo-com.png', (0.40, 0.3)),#höhe , breite
+            'icon_calendar': ('calendar-svgrepo-com.png', (0.40, 0.35)),
+            'icon_clock': ('clock-svgrepo-com.png', (0.40, 0.4)),
+            'icon_idea': ('idea-svgrepo-com.png', (0.40, 0.45)),#höhe , breite
+            'icon_music_player': ('music-player-svgrepo-com.png', (0.40, 0.5)),
+            'icon_navigation': ('navigation-svgrepo-com.png', (0.40, 0.55)),
+            'icon_smartphone': ('smartphone-svgrepo-com.png', (0.40, 0.6)),#höhe , breite
+            'icon_speaker': ('speaker-svgrepo-com.png', (0.40, 0.65)),
+            # Add more icons as needed
+        }  
+        self.show_icon_battery = True
+        self.show_icon_calendar = True
+        self.show_icon_clock = True
+        self.show_icon_idea = True
+        self.show_icon_music_player = True
+        self.show_icon_navigation = True
+        self.show_icon_smartphone = True
+        self.show_icon_speaker = True
+        self.hud_alpha = 1
+        self.iconscale = (90,90)
 
         # Initialize OpenCV window
         cv2.namedWindow('Camera Output', cv2.WINDOW_NORMAL)
@@ -157,7 +182,7 @@ class CarlaCameraClient:
 
         vehicle_name = f"Vehicle type: {self.vehicle.type_id}"  # Vehicle type text
         id_text = f"Vehicle ID: {self.vehicle.id}"  # Vehicle ID text
-        speed_text = f"Speed: {round(self.speed)} km/h"  # Speed text
+        speed_text = f"{round(self.speed)} km/h"  # Speed text
         font = cv2.FONT_HERSHEY_SIMPLEX  # Font for the text
 
         # Get text size for centering
@@ -168,7 +193,34 @@ class CarlaCameraClient:
         # Draw text centered on the screen
         cv2.putText(image, vehicle_name, (text_x - text_size_vehicle[0] // 2, 25), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
         cv2.putText(image, id_text, (text_x - text_size_id[0] // 2, 55), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-        cv2.putText(image, speed_text, (text_x - text_size_speed[0] // 2, text_y_start + 80), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(image, speed_text, (text_x - text_size_speed[0] // 2, text_y_start + 80), font, 1, (0, 0, 0), 2, cv2.LINE_AA)
+
+        self.add_icons(image, h, w)
+
+    def add_icons(self,image, height, width):
+        """Add icons to the image based on toggle states."""
+        for icon_name, (filename, rel_position) in self.icons.items():
+            if getattr(self, f'show_{icon_name}', False):
+                icon = cv2.imread(os.path.join(self.icon_path, filename), cv2.IMREAD_UNCHANGED)
+                icon = cv2.resize(icon, self.iconscale)  # Resize the icon if needed
+                abs_position = (int(height * rel_position[0]), int(width * rel_position[1]))
+                self.overlay_icon(image, icon, abs_position)
+
+    def overlay_icon(self, image, icon, position):
+        """Overlay the icon onto the image at the given position."""
+        y, x = position
+        h, w = icon.shape[:2]
+
+        if icon.shape[2] == 4:  # Handle transparency
+            alpha_s = icon[:, :, 3] / 255.0 *self.hud_alpha
+            alpha_l = 1.0 - alpha_s
+            for c in range(0, 3):
+                image[y:y+h, x:x+w, c] = (alpha_s * icon[:, :, c] +
+                                        alpha_l * image[y:y+h, x:x+w, c])
+        else:
+            # If no alpha channel, apply the transparency directly
+            for c in range(0, 3):
+                image[y:y+h, x:x+w, c] = (self.alpha * icon[:, :, c] + (1 - self.hud_alpha) * image[y:y+h, x:x+w, c])
 
     def switch_vehicle(self):
         """Switch to the next available vehicle."""
