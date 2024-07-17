@@ -384,6 +384,7 @@ def create_hud_frame(hud_number):
 
     vehicle_type = tk.StringVar(frame)
     vehicle_type_menu = ttk.Combobox(frame, textvariable=vehicle_type, values=available_vehicle_types, state="readonly", postcommand=lambda: dropdown_opened(vehicle_type_menu))
+    vehicle_type_menu.current(hud_number-1)
     vehicle_type_menu.grid(row=6, column=1, pady=5, padx=10, sticky='w')
 
     # Binde die Auswahländerung an den Eventhandler
