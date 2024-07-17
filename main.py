@@ -221,13 +221,13 @@ def close_window():
 
 def add_hud():
     global hud_count
-    hud_count += 1
 
-    if len(objects) >= len(available_vehicle_types):
+    if hud_count >= len(available_vehicle_types):
         print("Keine weiteren Objekte können hinzugefügt werden, da keine Optionen mehr verfügbar sind.")
         messagebox.showwarning("Keine verfügbaren IDs", "Es sind keine weiteren HUD-IDs verfügbar.")
         return
     
+    hud_count += 1
     hud_idx = len(hud_frames) + 1
 
     hud_frame = create_hud_frame(hud_idx)
@@ -257,8 +257,8 @@ def remove_hud(hud_frame, hud_id):
                 hud_frame.destroy()
                 
                 type = hud['vehicle_type'].get()
-                if type in available_vehicle_types:
-                    available_vehicle_types.append(type)
+                
+                available_vehicle_types.append(type)
                 
                 update_hud_names()
                 update_scrollregion()
@@ -297,7 +297,6 @@ def update_comboboxes():
 def update_hud_names():
     for hud_idx, hud_frame in enumerate(hud_frames, start=1):
         hud_frame['header'].configure(text=f"HUD {hud_idx}")
-
 
 def create_hud_frame(hud_number):
     frame = tk.Frame(scrollable_frame, bg="white", bd=2, relief="raised")
