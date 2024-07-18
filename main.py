@@ -11,6 +11,7 @@ import xml.etree.cElementTree as ET
 import xml.dom.minidom as minidom
 from dicttoxml import dicttoxml
 from xmler import dict2xml
+import xmlWriter
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
 #carla_base_dir = r"F:\Softwareprojekt\CARLA_0.9.15\WindowsNoEditor"
@@ -27,17 +28,12 @@ maps = {
     "Town05": "{}.sumocfg".format(os.path.join(sumo_base_dir, "examples", "Town05"))
 }
 
-hud_count = 0
-
 # Pfad zur vorhandenen XML-Datei mit vType-Elementen
 vtypes_xml_path = carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml"
 
 def start_simulation():
 
-
     xml_path = r"hudconfig.xml"
-
-    global hud_count
 
     selected_index = map_list.curselection()
 
@@ -52,16 +48,16 @@ def start_simulation():
     for vehicle_type, data in hud_data.items():
         print(f"{vehicle_type}: {data}")
 
-    update_max_speeds(carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml",hud_data)
+    xmlWriter.update_max_speeds(carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml", hud_data)
 
-    writeXML(xml_data)
+    xmlWriter.writeXML(xml_data)
 
     if selected_index:
         selected_map = map_list.get(selected_index[0])
         selected_sumocfg = maps[selected_map]
 
         # Erstelle die .rou.xml Datei für die Fahrzeuge
-        modify_vehicle_routes(selected_map)
+        xmlWriter.modify_vehicle_routes(selected_map, sumo_base_dir, hud_frames)
     
         if simulate_var.get(): # Wenn Checkbox angekreuzt ist
 
@@ -170,87 +166,6 @@ def XML_selection():
 
     return xml_data
 
-
-def update_max_speeds(xml_file_path, hud_data):
-    # Parse the XML file
-    tree = ET.parse(xml_file_path)
-    root = tree.getroot()
-
-    # Update maxSpeed, minGapLat, speedFactor, and add driverstate params for each HUD in hud_data
-    for vehicle_type, data in hud_data.items():
-        max_speed = data['max_speed']
-        minGap = data.get('min_Gap', '')  # Assuming 'min_Gap' might not always be present
-        speedFactor = data.get('speed_factor', '')  # Assuming 'speed_factor' might not always be present
-        reactionTime = data.get('reactTime')
-
-        # Find the vType element with the specified hud_id
-        
-        for vtype_elem in root.findall('vType'):
-            vtype_id = vtype_elem.get('id')
-
-            # Check if the vType id matches the current vehicle_type
-            if vtype_id == vehicle_type:
-                # Update the maxSpeed, minGapLat, speedFactor attributes
-                vtype_elem.set('maxSpeed', str(max_speed))
-                vtype_elem.set('minGap', str(minGap))
-                vtype_elem.set('speedFactor', str(speedFactor))
-
-                # Check if driverstate params already exist, and update or create accordingly
-                driverstate_params = vtype_elem.findall("./param[@key='has.driverstate.device']")
-                if driverstate_params:
-                    # Update existing param
-                    driverstate_params[0].set('value', 'true')
-                else:
-                    # Create new param
-                    driverstate_param1 = ET.SubElement(vtype_elem, 'param')
-                    driverstate_param1.set('key', 'has.driverstate.device')
-                    driverstate_param1.set('value', 'true')
-
-                # Check and update or create maximalReactionTime param
-                reaction_time_params = vtype_elem.findall("./param[@key='maximalReactionTime']")
-                if reaction_time_params:
-                    # Update existing param
-                    reaction_time_params[0].set('value', str(reactionTime))
-                else:
-                    # Create new param
-                    driverstate_param2 = ET.SubElement(vtype_elem, 'param')
-                    driverstate_param2.set('key', 'maximalReactionTime')
-                    driverstate_param2.set('value', str(reactionTime))
-
-                # Set random color (RGB)
-                color = "#{:02x}{:02x}{:02x}".format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-                vtype_elem.set('color', color)
-
-    # Write the updated XML back to the file
-    tree.write(xml_file_path, encoding='utf-8', xml_declaration=True)
-
-def prettify(elem):
-    """Return a pretty-printed XML string for the Element."""
-    rough_string = ET.tostring(elem, 'utf-8')
-    reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="    ")  # Adjust the indentation level as needed
-
-def writeXML(hud_data):
-
-    xml_path = "hudconfig.xml"
-    # Create the root element
-    root = ET.Element("Vehicles")
-
-    # Create XML structure
-    for vehicle_type, attributes in hud_data.items():
-        vehicle_elem = ET.SubElement(root, "Vehicle", type_id=vehicle_type)
-        for key, value in attributes.items():
-            ET.SubElement(vehicle_elem, key).text = str(value)
-
-    # Pretty print the XML
-    xml_str = prettify(root)
-
-    # Write to XML file
-    with open(xml_path, "w", encoding="utf-8") as f:
-        f.write(xml_str)
-
-    print(f"XML file created successfully at {xml_path}")
-
 def start_sumo(selected_sumocfg):
     try:
         # Starte SUMO mit der ausgewählten Konfigurationsdatei
@@ -260,122 +175,90 @@ def start_sumo(selected_sumocfg):
     except FileNotFoundError:
         print("SUMO konnte nicht gefunden werden. Stelle sicher, dass der Pfad korrekt ist.")
 
-
-def modify_vehicle_routes(selected_map):
-    original_routes_file = os.path.join(sumo_base_dir, "examples", "rou", selected_map + ".rou.xml")
-
-    try:
-        # XML-Dokument einlesen
-        tree = ET.parse(original_routes_file)
-        root = tree.getroot()
-
-        # Liste der HUD-IDs und deren Wahrscheinlichkeiten
-        vehicle_types = []
-        probabilities = []
-
-        for hud in hud_frames:
-            probability = float(hud['entry'].get())  # Wahrscheinlichkeit aus dem Eingabefeld
-            vehicle_type = hud['vehicle_type'].get()  # Ausgewählter Fahrzeugtyp
-
-            vehicle_types.append(vehicle_type)
-            probabilities.append(probability)
-
-        # Fahrzeugtypen den Fahrzeugen in der Route zuweisen
-        for vehicle in root.findall('vehicle'):
-            if vehicle_types:
-                vehicle_type = random.choices(vehicle_types, probabilities)[0]  # Wählt basierend auf Wahrscheinlichkeiten aus
-                vehicle.set('type', vehicle_type)
-
-        # Änderungen in die Datei schreiben
-        tree.write(original_routes_file)
-
-    except FileNotFoundError:
-        print(f"Datei {original_routes_file} nicht gefunden.")
-
 # Funktion zum Schließen des Hauptfensters
 def close_window():
     root.destroy()
 
-def add_hud():
-    global hud_count
+# Funktion zur Aktualisierung der Scrollregion des Canvas
+def update_scrollregion():
+    canvas.update_idletasks()
+    canvas.config(scrollregion=canvas.bbox("all"))
 
-    if hud_count >= len(available_vehicle_types):
-        print("Keine weiteren Objekte können hinzugefügt werden, da keine Optionen mehr verfügbar sind.")
-        messagebox.showwarning("Keine verfügbaren IDs", "Es sind keine weiteren HUD-IDs verfügbar.")
-        return
-    
-    hud_count += 1
-    hud_idx = len(hud_frames) + 1
+# Hauptfenster erstellen
+root = tk.Tk()
+root.title("SUMO Simulation Launcher")
 
-    hud_frame = create_hud_frame(hud_idx)
-    hud_frames.append(hud_frame)
-    hud_frame['frame'].pack(pady=10, padx=20, ipadx=10, ipady=10, fill="x")
-    update_scrollregion()
-    print("Added HUD: " + str(hud_idx))
-    
-# Globale Liste der verfügbaren Fahrzeugtypen
-available_vehicle_types = [
-    "vehicle.audi.a2", "vehicle.audi.tt", "vehicle.jeep.wrangler_rubicon",
-    "vehicle.chevrolet.impala", "vehicle.mini.cooper_s", "vehicle.mercedes.coupe",
-    "vehicle.bmw.grandtourer", "vehicle.citroen.c3", "vehicle.ford.mustang",
-    "vehicle.volkswagen.t2", "vehicle.lincoln.mkz_2017", "vehicle.seat.leon",
-    "vehicle.nissan.patrol"
-]
-   
-def remove_hud(hud_frame, hud_id):
-    global hud_count
+# Variable für den Status der Checkbox
+simulate_var = tk.BooleanVar()
+simulate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
+spectate_var = tk.BooleanVar()
+spectate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
+hudless_var = tk.BooleanVar()
+hudless_var.set(False)
 
-    if hud_count > 1:
-        hud_count -= 1
+# Label für die Auswahl der Map
+map_label = tk.Label(root, text="Wähle eine Map:")
+map_label.pack(pady=10)
 
-        for idx, hud in enumerate(hud_frames):
-            if hud['frame'] == hud_frame:
-                hud_frames.remove(hud)
-                hud_frame.destroy()
-                
-                type = hud['vehicle_type'].get()
-                
-                available_vehicle_types.append(type)
-                
-                update_hud_names()
-                update_scrollregion()
-                break
-    else:
-        messagebox.showwarning("Achtung", "Mindestens ein HUD muss in der Liste verbleiben.")
+# Listbox für die Auswahl der Map
+map_list = tk.Listbox(root)
+for map_name in maps:
+    map_list.insert(tk.END, map_name)
 
-def on_selection(event):
-    dropdown = event.widget
-    selected_value = dropdown.get()
-    
-    # Finde das entsprechende Objekt und aktualisiere den gespeicherten Wert
-    for i, (label, combobox, previous_value) in enumerate(objects):
-        if combobox == dropdown:
-            # Wenn ein vorheriger Wert vorhanden war, füge ihn zurück zur Liste hinzu
-            if previous_value and previous_value not in available_vehicle_types:
-                available_vehicle_types.append(previous_value)
-            
-            # Entferne den neuen Wert aus der Liste
-            if selected_value in available_vehicle_types:
-                available_vehicle_types.remove(selected_value)
-            
-            # Aktualisiere den gespeicherten Wert im Objekt
-            objects[i] = (label, combobox, selected_value)
-            break
-    
-    # Aktualisiere alle Dropdown-Menüs
-    update_comboboxes()
+# Standardmäßig die erste Map auswählen
+map_list.selection_set(0)
+map_list.pack()
 
-def update_comboboxes():
-    for _, dropdown, _ in objects:
-        if dropdown.winfo_exists():  # Überprüfen, ob das Widget existiert
-            dropdown['values'] = available_vehicle_types
+# Checkbox für die Simulation
+simulate_checkbox = tk.Checkbutton(root, text="Co-Simulation mit Carla starten", variable=simulate_var)
+simulate_checkbox.pack()
 
-# Funktion zur Aktualisierung der HUD-Namen nach Entfernen eines HUDs
-def update_hud_names():
-    for hud_idx, hud_frame in enumerate(hud_frames, start=1):
-        hud_frame['header'].configure(text=f"HUD {hud_idx}")
+# Checkbox für den spectator
+spectator_checkbox = tk.Checkbutton(root, text="first person spectator starten", variable=spectate_var)
+spectator_checkbox.pack()
+
+# Checkbox für den spectator
+hudless_checkbox = tk.Checkbutton(root, text="Simulate a car without HUD", variable=hudless_var)
+hudless_checkbox.pack()
+
+# Fenstergröße und Position festlegen
+window_width = 800
+window_height = 600
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
+x_coordinate = (screen_width - window_width) // 2
+y_coordinate = (screen_height - window_height) // 2
+root.geometry(f"{window_width}x{window_height}+{x_coordinate}+{y_coordinate}")
+
+# Hintergrundfarbe für den Canvas und Scrollbar hinzufügen
+canvas = tk.Canvas(root, bg="#f0f0f0")
+scrollbar = tk.Scrollbar(root, orient="vertical", command=canvas.yview)
+
+# Scrollable Frame erstellen
+scrollable_frame = tk.Frame(canvas, bg="#f0f0f0")
+
+# Canvas Konfigurationen
+canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+canvas.configure(yscrollcommand=scrollbar.set)
+
+# Binden des Mausrads für das Scrollen
+canvas.bind_all("<MouseWheel>", lambda event: canvas.yview_scroll(int(-1 * (event.delta / 120)), "units"))
+
+# Liste für HUD Frames
+hud_frames = []
+objects=[]
+
+hud_count = 0
+
+# Dropdown-Optionen und Farben definieren
+brightness_level = ["Sehr dunkel", "Dunkel", "Moderat", "Hell", "Sehr hell"]
+information_density = ["Minimum", "Moderat", "Maximum"]
+information_relevance = ["Unwichtig", "Neutral", "Wichtig"]
+fov = ["Small", "Medium", "Large"]
+
 
 def create_hud_frame(hud_number):
+
     frame = tk.Frame(scrollable_frame, bg="white", bd=2, relief="raised")
 
     '''
@@ -486,15 +369,112 @@ def create_hud_frame(hud_number):
         'hud_id': hud_number
     }
 
-objects=[]
-
 def dropdown_opened(dropdown):
     print("Das Dropdown-Menü wurde geöffnet!")
     dropdown['values'] = available_vehicle_types  # Aktualisiere die Werte des Dropdown-Menüs
 
-def getList():
-    return available_vehicle_types
 
+def add_hud():
+    global hud_count
+
+    if hud_count >= len(available_vehicle_types):
+        print("Keine weiteren Objekte können hinzugefügt werden, da keine Optionen mehr verfügbar sind.")
+        messagebox.showwarning("Keine verfügbaren IDs", "Es sind keine weiteren HUD-IDs verfügbar.")
+        return
+    
+    hud_count += 1
+    hud_idx = len(hud_frames) + 1
+
+    hud_frame = create_hud_frame(hud_idx)
+    hud_frames.append(hud_frame)
+    hud_frame['frame'].pack(pady=10, padx=20, ipadx=10, ipady=10, fill="x")
+    update_scrollregion()
+    print("Added HUD: " + str(hud_idx))
+    
+# Globale Liste der verfügbaren Fahrzeugtypen
+available_vehicle_types = [
+    "vehicle.audi.a2", "vehicle.audi.tt", "vehicle.jeep.wrangler_rubicon",
+    "vehicle.chevrolet.impala", "vehicle.mini.cooper_s", "vehicle.mercedes.coupe",
+    "vehicle.bmw.grandtourer", "vehicle.citroen.c3", "vehicle.ford.mustang",
+    "vehicle.volkswagen.t2", "vehicle.lincoln.mkz_2017", "vehicle.seat.leon",
+    "vehicle.nissan.patrol"
+]
+   
+def remove_hud(hud_frame, hud_id):
+    global hud_count
+
+    if hud_count > 1:
+        hud_count -= 1
+
+        for idx, hud in enumerate(hud_frames):
+            if hud['frame'] == hud_frame:
+                hud_frames.remove(hud)
+                hud_frame.destroy()
+                
+                type = hud['vehicle_type'].get()
+                
+                available_vehicle_types.append(type)
+                
+                update_hud_names()
+                update_scrollregion()
+                break
+    else:
+        messagebox.showwarning("Achtung", "Mindestens ein HUD muss in der Liste verbleiben.")
+
+def on_selection(event):
+    dropdown = event.widget
+    selected_value = dropdown.get()
+    
+    # Finde das entsprechende Objekt und aktualisiere den gespeicherten Wert
+    for i, (label, combobox, previous_value) in enumerate(objects):
+        if combobox == dropdown:
+            # Wenn ein vorheriger Wert vorhanden war, füge ihn zurück zur Liste hinzu
+            if previous_value and previous_value not in available_vehicle_types:
+                available_vehicle_types.append(previous_value)
+            
+            # Entferne den neuen Wert aus der Liste
+            if selected_value in available_vehicle_types:
+                available_vehicle_types.remove(selected_value)
+            
+            # Aktualisiere den gespeicherten Wert im Objekt
+            objects[i] = (label, combobox, selected_value)
+            break
+    
+    # Aktualisiere alle Dropdown-Menüs
+    update_comboboxes()
+
+def update_comboboxes():
+    for _, dropdown, _ in objects:
+        if dropdown.winfo_exists():  # Überprüfen, ob das Widget existiert
+            dropdown['values'] = available_vehicle_types
+
+# Funktion zur Aktualisierung der HUD-Namen nach Entfernen eines HUDs
+def update_hud_names():
+    for hud_idx, hud_frame in enumerate(hud_frames, start=1):
+        hud_frame['header'].configure(text=f"HUD {hud_idx}")
+
+# Funktion aufrufen, um standardmäßig 3 HUDs zu erstellen
+def create_default_huds():
+    for _ in range(3):
+        add_hud()
+
+#Canvas und Scrollbar packen
+canvas.pack(side="left", fill="both", expand=True)
+scrollbar.pack(side="right", fill="y")
+
+# Button Frame für die Bedienelemente
+button_frame = tk.Frame(root, bg="#f0f0f0")
+button_frame.pack(pady=10)
+
+# Buttons erstellen und einfügen
+add_hud_button = tk.Button(button_frame, text="HUD hinzufügen", command=add_hud, bg="#4682b4", fg="white")
+add_hud_button.pack(side="left", padx=20)
+
+start_button = tk.Button(root, text="Simulation starten", command=start_simulation, bg="#32cd32", fg="white")
+start_button.pack(pady=10)
+
+close_button = tk.Button(root, text="Schließen", command=close_window, bg="#a9a9a9", fg="white")
+close_button.pack(pady=10)
 # ToolTip Klasse zur Erstellung der Tooltip-Fenster
 class ToolTip:
     def __init__(self, widget, text):
@@ -523,103 +503,6 @@ class ToolTip:
         if self.tooltip_window:
             self.tooltip_window.destroy()
             self.tooltip_window = None
-
-# Funktion zur Aktualisierung der Scrollregion des Canvas
-def update_scrollregion():
-    canvas.update_idletasks()
-    canvas.config(scrollregion=canvas.bbox("all"))
-
-# Hauptfenster erstellen
-root = tk.Tk()
-root.title("SUMO Simulation Launcher")
-
-# Variable für den Status der Checkbox
-simulate_var = tk.BooleanVar()
-simulate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
-spectate_var = tk.BooleanVar()
-spectate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
-hudless_var = tk.BooleanVar()
-hudless_var.set(False)
-
-# Label für die Auswahl der Map
-map_label = tk.Label(root, text="Wähle eine Map:")
-map_label.pack(pady=10)
-
-# Listbox für die Auswahl der Map
-map_list = tk.Listbox(root)
-for map_name in maps:
-    map_list.insert(tk.END, map_name)
-
-# Standardmäßig die erste Map auswählen
-map_list.selection_set(0)
-map_list.pack()
-
-# Checkbox für die Simulation
-simulate_checkbox = tk.Checkbutton(root, text="Co-Simulation mit Carla starten", variable=simulate_var)
-simulate_checkbox.pack()
-
-# Checkbox für den spectator
-spectator_checkbox = tk.Checkbutton(root, text="first person spectator starten", variable=spectate_var)
-spectator_checkbox.pack()
-
-# Checkbox für den spectator
-hudless_checkbox = tk.Checkbutton(root, text="Simulate a car without HUD", variable=hudless_var)
-hudless_checkbox.pack()
-
-# Fenstergröße und Position festlegen
-window_width = 800
-window_height = 600
-screen_width = root.winfo_screenwidth()
-screen_height = root.winfo_screenheight()
-x_coordinate = (screen_width - window_width) // 2
-y_coordinate = (screen_height - window_height) // 2
-root.geometry(f"{window_width}x{window_height}+{x_coordinate}+{y_coordinate}")
-
-# Hintergrundfarbe für den Canvas und Scrollbar hinzufügen
-canvas = tk.Canvas(root, bg="#f0f0f0")
-scrollbar = tk.Scrollbar(root, orient="vertical", command=canvas.yview)
-
-# Scrollable Frame erstellen
-scrollable_frame = tk.Frame(canvas, bg="#f0f0f0")
-
-# Canvas Konfigurationen
-canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-canvas.configure(yscrollcommand=scrollbar.set)
-
-# Binden des Mausrads für das Scrollen
-canvas.bind_all("<MouseWheel>", lambda event: canvas.yview_scroll(int(-1 * (event.delta / 120)), "units"))
-
-# Canvas und Scrollbar packen
-canvas.pack(side="left", fill="both", expand=True)
-scrollbar.pack(side="right", fill="y")
-
-# Dropdown-Optionen und Farben definieren
-brightness_level = ["Sehr dunkel", "Dunkel", "Moderat", "Hell", "Sehr hell"]
-information_density = ["Minimum", "Moderat", "Maximum"]
-information_relevance = ["Unwichtig", "Neutral", "Wichtig"]
-fov = ["Small", "Medium", "Large"]
-
-# Liste für HUD Frames
-hud_frames = []
-
-# Funktion aufrufen, um standardmäßig 3 HUDs zu erstellen
-def create_default_huds():
-    for _ in range(3):
-        add_hud()
-
-# Button Frame für die Bedienelemente
-button_frame = tk.Frame(root, bg="#f0f0f0")
-button_frame.pack(pady=10)
-
-# Buttons erstellen und einfügen
-add_hud_button = tk.Button(button_frame, text="HUD hinzufügen", command=add_hud, bg="#4682b4", fg="white")
-add_hud_button.pack(side="left", padx=20)
-
-start_button = tk.Button(root, text="Simulation starten", command=start_simulation, bg="#32cd32", fg="white")
-start_button.pack(pady=10)
-
-close_button = tk.Button(root, text="Schließen", command=close_window, bg="#a9a9a9", fg="white")
-close_button.pack(pady=10)
 
 # Standard-HUDs erstellen
 create_default_huds()
