@@ -34,20 +34,20 @@ vtypes_xml_path = carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.
 
 def start_simulation():
 
+    selected_index = map_list.curselection()
 
+    if selected_index == ():
+        print("no map")
+        messagebox.showwarning("No map selected", "Please select a map for the simulation.")
+        return
+        
     xml_path = r"hudconfig.xml"
 
     global hud_count
 
-    selected_index = map_list.curselection()
-
     hud_data = hudSelection()
     xml_data = XML_selection()
-
-    if hudless_var.get():
-        print("WORKS")
-        #hud_data['vehicle_type'] = 
-
+        
     print("Gespeicherte HUD-Daten:")
     for vehicle_type, data in hud_data.items():
         print(f"{vehicle_type}: {data}")
@@ -225,7 +225,6 @@ def update_max_speeds(xml_file_path, hud_data):
     tree.write(xml_file_path, encoding='utf-8', xml_declaration=True)
 
 def prettify(elem):
-    """Return a pretty-printed XML string for the Element."""
     rough_string = ET.tostring(elem, 'utf-8')
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent="    ")  # Adjust the indentation level as needed
@@ -378,10 +377,6 @@ def update_hud_names():
 def create_hud_frame(hud_number):
     frame = tk.Frame(scrollable_frame, bg="white", bd=2, relief="raised")
 
-    '''
-    header = tk.Label(frame, text=f"HUD {hud_number}", font=('Helvetica', 12, 'bold'), bg="white")
-    header.grid(row=0, column=0, columnspan=3, pady=10, sticky='n')
-    '''
     header_entry = tk.Entry(frame, width=20, font=('Helvetica', 14, 'bold'))
     header_entry.insert(0, f"HUD {hud_number}")
     header_entry.grid(row=0, column=0,pady=10, sticky='n' )
@@ -464,9 +459,8 @@ def create_hud_frame(hud_number):
     vehicle_type_menu.current(hud_number-1)
     vehicle_type_menu.grid(row=6, column=1, pady=5, padx=10, sticky='w')
 
-    # Binde die Auswahländerung an den Eventhandler
     vehicle_type_menu.bind('<<ComboboxSelected>>', on_selection)
-    
+
     # Speichere das neue Objekt und den initialen Wert (leer)
     objects.append((label_vehicle_type, vehicle_type_menu, ""))
 
@@ -538,8 +532,9 @@ simulate_var = tk.BooleanVar()
 simulate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
 spectate_var = tk.BooleanVar()
 spectate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
-hudless_var = tk.BooleanVar()
-hudless_var.set(False)
+
+#hudless_var = tk.BooleanVar()
+#hudless_var.set(False)
 
 # Label für die Auswahl der Map
 map_label = tk.Label(root, text="Wähle eine Map:")
@@ -550,9 +545,12 @@ map_list = tk.Listbox(root)
 for map_name in maps:
     map_list.insert(tk.END, map_name)
 
+'''
 # Standardmäßig die erste Map auswählen
-map_list.selection_set(0)
+map_list.selection_set(0) '''
+
 map_list.pack()
+
 
 # Checkbox für die Simulation
 simulate_checkbox = tk.Checkbutton(root, text="Co-Simulation mit Carla starten", variable=simulate_var)
@@ -563,8 +561,8 @@ spectator_checkbox = tk.Checkbutton(root, text="first person spectator starten",
 spectator_checkbox.pack()
 
 # Checkbox für den spectator
-hudless_checkbox = tk.Checkbutton(root, text="Simulate a car without HUD", variable=hudless_var)
-hudless_checkbox.pack()
+#hudless_checkbox = tk.Checkbutton(root, text="Simulate a car without HUD", variable=hudless_var)
+#hudless_checkbox.pack()
 
 # Fenstergröße und Position festlegen
 window_width = 800
@@ -620,6 +618,29 @@ start_button.pack(pady=10)
 
 close_button = tk.Button(root, text="Schließen", command=close_window, bg="#a9a9a9", fg="white")
 close_button.pack(pady=10)
+
+# unbind scrolling over the combobox so that we don't scroll through options (optional)
+scrollable_frame.unbind_class("TCombobox", "<MouseWheel>")
+
+# empty antiscroll method
+def dontscroll(e):
+    return "dontscroll"
+
+# methods to bind the mousewheel to scroll the canvas or not
+def on_enter(e):
+    scrollable_frame.bind_all("<MouseWheel>", dontscroll)
+
+def _on_mouse_wheel(event):
+    canvas.yview_scroll(-1 * int((event.delta / 120)), "units")
+
+def on_leave(e):
+    scrollable_frame.bind_all("<MouseWheel>", _on_mouse_wheel)
+
+# while hovering over a listbox, dont scroll the canvas on mousewheel, otherwise do
+scrollable_frame.bind_class('Listbox', '<Enter>',
+                       on_enter)
+scrollable_frame.bind_class('Listbox', '<Leave>',
+                       on_leave)
 
 # Standard-HUDs erstellen
 create_default_huds()
