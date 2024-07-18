@@ -29,11 +29,11 @@ maps = {
 
 hud_count = 0
 
-
 # Pfad zur vorhandenen XML-Datei mit vType-Elementen
 vtypes_xml_path = carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml"
 
 def start_simulation():
+
 
     xml_path = r"hudconfig.xml"
 
@@ -43,6 +43,10 @@ def start_simulation():
 
     hud_data = hudSelection()
     xml_data = XML_selection()
+
+    if hudless_var.get():
+        print("WORKS")
+        #hud_data['vehicle_type'] = 
 
     print("Gespeicherte HUD-Daten:")
     for vehicle_type, data in hud_data.items():
@@ -180,24 +184,38 @@ def update_max_speeds(xml_file_path, hud_data):
         reactionTime = data.get('reactTime')
 
         # Find the vType element with the specified hud_id
+        
         for vtype_elem in root.findall('vType'):
             vtype_id = vtype_elem.get('id')
 
-            # Check if the vType id matches the current hud_id
+            # Check if the vType id matches the current vehicle_type
             if vtype_id == vehicle_type:
                 # Update the maxSpeed, minGapLat, speedFactor attributes
                 vtype_elem.set('maxSpeed', str(max_speed))
                 vtype_elem.set('minGap', str(minGap))
                 vtype_elem.set('speedFactor', str(speedFactor))
 
-                # Add driverstate params
-                driverstate_param1 = ET.SubElement(vtype_elem, 'param')
-                driverstate_param1.set('key', 'has.driverstate.device')
-                driverstate_param1.set('value', 'true')
+                # Check if driverstate params already exist, and update or create accordingly
+                driverstate_params = vtype_elem.findall("./param[@key='has.driverstate.device']")
+                if driverstate_params:
+                    # Update existing param
+                    driverstate_params[0].set('value', 'true')
+                else:
+                    # Create new param
+                    driverstate_param1 = ET.SubElement(vtype_elem, 'param')
+                    driverstate_param1.set('key', 'has.driverstate.device')
+                    driverstate_param1.set('value', 'true')
 
-                driverstate_param2 = ET.SubElement(vtype_elem, 'param')
-                driverstate_param2.set('key', 'maximalReactionTime')
-                driverstate_param2.set('value', str(reactionTime))
+                # Check and update or create maximalReactionTime param
+                reaction_time_params = vtype_elem.findall("./param[@key='maximalReactionTime']")
+                if reaction_time_params:
+                    # Update existing param
+                    reaction_time_params[0].set('value', str(reactionTime))
+                else:
+                    # Create new param
+                    driverstate_param2 = ET.SubElement(vtype_elem, 'param')
+                    driverstate_param2.set('key', 'maximalReactionTime')
+                    driverstate_param2.set('value', str(reactionTime))
 
                 # Set random color (RGB)
                 color = "#{:02x}{:02x}{:02x}".format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
@@ -520,6 +538,8 @@ simulate_var = tk.BooleanVar()
 simulate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
 spectate_var = tk.BooleanVar()
 spectate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
+hudless_var = tk.BooleanVar()
+hudless_var.set(False)
 
 # Label für die Auswahl der Map
 map_label = tk.Label(root, text="Wähle eine Map:")
@@ -541,6 +561,10 @@ simulate_checkbox.pack()
 # Checkbox für den spectator
 spectator_checkbox = tk.Checkbutton(root, text="first person spectator starten", variable=spectate_var)
 spectator_checkbox.pack()
+
+# Checkbox für den spectator
+hudless_checkbox = tk.Checkbutton(root, text="Simulate a car without HUD", variable=hudless_var)
+hudless_checkbox.pack()
 
 # Fenstergröße und Position festlegen
 window_width = 800
