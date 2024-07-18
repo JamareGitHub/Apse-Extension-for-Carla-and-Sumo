@@ -9,6 +9,7 @@ from collections import deque
 
 class CarlaCameraClient:
     def __init__(self, host='127.0.0.1', port=2000):
+        # Initialize the CARLA client and world
         self.client = carla.Client(host, port)
         self.client.set_timeout(10.0)
         self.world = self.client.get_world()
@@ -20,21 +21,21 @@ class CarlaCameraClient:
         self.image_data = None
         self.exit_flag = False
 
-        #speed
+        # Speed-related attributes
         self.speed = 0.0  # Store the speed of the vehicle
         self.current_location = None  # Track current location for speed calculation
         self.previous_location = None  # Track previous location for speed calculation
         self.current_location_timestamp = None  # Timestamp for current location
         self.previous_location_timestamp = None  # Timestamp for previous location
-        self.speed_history = deque(maxlen=100)  # Store the last 5 speed measurements for smoothing
+        self.speed_history = deque(maxlen=100)  # Store the last 100 speed measurements for smoothing
         self.smoothing_timestamp = None
 
-        #camera
+        # Camera configuration
         self.first_person_location = [-.1, -.3, 1.3]  # Camera position
         self.image_resolution_x = '1920'
         self.image_resolution_y = '1080'
 
-        #icons
+        # HUD icons configuration
         self.icon_path = "icons/"
         self.icons = {
             'icon_battery': ('battery-svgrepo-com.png', (0.60, 0.3)),#höhe , breite
@@ -45,18 +46,14 @@ class CarlaCameraClient:
             'icon_speaker': ('speaker-svgrepo-com.png', (0.50, 0.5)),
             'icon_compass': ('compass-svgrepo-com.png', (0.50, 0.4)),
             'icon_placeholder': ('placeholder-svgrepo-com.png', (0.50, 0.55)),
-
-
             'icon_idea': ('idea-svgrepo-com.png', (0.60, 0.4)),
             'icon_minus': ('minus-svgrepo-com.png', (0.50, 0.45)),
             'icon_stopwatch': ('stopwatch-svgrepo-com.png', (0.60, 0.45)),
             'icon_navigation': ('navigation-svgrepo-com.png', (0.60, 0.5)),
-
-            # Add more icons as needed
         }  
+        
         self.show_speed_text = False
         self.show_icon_stopwatch = False
-
         self.show_icon_battery = False
         self.show_icon_calendar = False
         self.show_icon_clock = False
@@ -74,7 +71,7 @@ class CarlaCameraClient:
         # Initialize OpenCV window
         cv2.namedWindow('Camera Output', cv2.WINDOW_NORMAL)
         
-        #Initialize with the XML configuration file
+        # Initialize with the XML configuration file
         self.hud_xml_config = self.load_xml_config("hudconfig.xml")
 
     def load_xml_config(self, xml_file):
@@ -98,17 +95,18 @@ class CarlaCameraClient:
         return config
     
     def set_xml_config(self, vehicle):
+        """Set HUD configuration based on XML for a specific vehicle type."""
         if vehicle.type_id in self.hud_xml_config:
             config = self.hud_xml_config[vehicle.type_id]
             brightness = config.get('Brightness')
             density = config.get('Density')
             relevance = config.get('Relevance')
             fov = config.get('FoV')
-
             
-            self.show_speed_text = True #always show speed if hud is active
+            self.show_speed_text = True # always show speed if hud is active
             self.show_icon_stopwatch = True
 
+            # set alpha based on brightness value (legacy stable)
             if brightness == "1_very_dark":
                 self.hud_alpha = 0.1
             elif brightness == "2_dark":
@@ -120,6 +118,7 @@ class CarlaCameraClient:
             elif brightness == "5_very_bright":
                 self.hud_alpha = 1
 
+            # set icon population based on relevancy
             if relevance == "1_unimportant":
                 self.show_speed_text = True
                 self.show_icon_battery = True
@@ -146,11 +145,6 @@ class CarlaCameraClient:
                 self.show_icon_navigation = True
                 self.show_icon_minus = True 
                 self.show_icon_idea = True
-
-
-
-
-
         else:
             self.reset_hud()
 
@@ -176,9 +170,9 @@ class CarlaCameraClient:
         self.reset_hud()
 
     def reset_hud(self):
+        """Reset the HUD to default values."""
         self.show_speed_text = False
         self.show_icon_stopwatch = False
-
         self.show_icon_battery = False
         self.show_icon_calendar = False
         self.show_icon_clock = False
@@ -289,9 +283,7 @@ class CarlaCameraClient:
         # Calculate positions for the text and icons
         text_x = w // 2  # Center the text horizontally
         text_y_start = h // 2 - 30  # Center the text vertically, starting above the center
-
         
-
         vehicle_name = f"Vehicle type: {self.vehicle.type_id}"  # Vehicle type text
         id_text = f"Vehicle ID: {self.vehicle.id}"  # Vehicle ID text
         font = cv2.FONT_HERSHEY_SIMPLEX  # Font for the text
@@ -330,8 +322,7 @@ class CarlaCameraClient:
             alpha_s = icon[:, :, 3] / 255.0 *self.hud_alpha
             alpha_l = 1.0 - alpha_s
             for c in range(0, 3):
-                image[y:y+h, x:x+w, c] = (alpha_s * icon[:, :, c] +
-                                        alpha_l * image[y:y+h, x:x+w, c])
+                image[y:y+h, x:x+w, c] = (alpha_s * icon[:, :, c] + alpha_l * image[y:y+h, x:x+w, c])
         else:
             # If no alpha channel, apply the transparency directly
             for c in range(0, 3):
@@ -343,10 +334,8 @@ class CarlaCameraClient:
         if not self.vehicles:
             print("No vehicles available to switch.")
             return
-
         num_vehicles = len(self.vehicles)
         self.current_vehicle_index = (self.current_vehicle_index + 1) % num_vehicles
-
         while True:
             vehicle = self.vehicles[self.current_vehicle_index]
             try:
@@ -371,7 +360,6 @@ class CarlaCameraClient:
             if self.vehicle and self.vehicle.get_location().x == 0.0 and self.vehicle.get_location().y == 0.0 and self.vehicle.get_location().z == 0.0:
                 print("Vehicle finished its route / got deleted, trying to switch to next vehicle")
                 self.switch_vehicle()
-
             self.display_camera_output()
             key = cv2.waitKey(1) & 0xFF
             if key == ord('n'):
@@ -383,7 +371,6 @@ class CarlaCameraClient:
             elif cv2.getWindowProperty('Camera Output', cv2.WND_PROP_VISIBLE) < 1:
                 print("Window closed by user.")
                 self.exit_flag = True
-
         self.cleanup()
 
     def cleanup(self):
