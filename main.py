@@ -1,24 +1,24 @@
 import tkinter as tk
 import subprocess
 import xml.etree.ElementTree as ET
-from tkinter import filedialog, messagebox
+from tkinter import messagebox
 import os
 import random
 import time
-import xml.dom.minidom as minidom
 import calculations
+from tkinter import ttk
+import xml.etree.cElementTree as ET
+import xml.dom.minidom as minidom
+from dicttoxml import dicttoxml
+from xmler import dict2xml
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
-carla_base_dir = r"F:\Softwareprojekt\CARLA_0.9.15\WindowsNoEditor"
-#carla_base_dir = r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor"
+#carla_base_dir = r"F:\Softwareprojekt\CARLA_0.9.15\WindowsNoEditor"
+carla_base_dir = r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor"
 config_script = os.path.join(carla_base_dir, "PythonAPI", "util", "config.py")
 
 # Basisverzeichnis für SUMO
 sumo_base_dir = os.path.join(carla_base_dir, "Co-Simulation", "Sumo")
-
-# Liste der verfügbaren HUD-IDs
-available_hud_ids = ["vehicle.audi.a2","vehicle.audi.tt","vehicle.jeep.wrangler_rubicon","vehicle.chevrolet.impala", "vehicle.mini.cooper_s", "vehicle.mercedes.coupe", "vehicle.bmw.grandtourer" ,
-                     "vehicle.citroen.c3", "vehicle.ford.mustang", "vehicle.volkswagen.t2", "vehicle.lincoln.mkz_2017", "vehicle.seat.leon", "vehicle.nissan.patrol"]
 
 # Liste der verfügbaren Maps
 maps = {
@@ -34,22 +34,33 @@ vtypes_xml_path = carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.
 
 def start_simulation():
 
+
+    xml_path = r"hudconfig.xml"
+
     global hud_count
 
     selected_index = map_list.curselection()
 
     hud_data = hudSelection()
+    xml_data = XML_selection()
+
+    if hudless_var.get():
+        print("WORKS")
+        #hud_data['vehicle_type'] = 
+
     print("Gespeicherte HUD-Daten:")
-    for hud_id, data in hud_data.items():
-        print(f"{hud_id}: {data}")
+    for vehicle_type, data in hud_data.items():
+        print(f"{vehicle_type}: {data}")
 
     update_max_speeds(carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml",hud_data)
+
+    writeXML(xml_data)
 
     if selected_index:
         selected_map = map_list.get(selected_index[0])
         selected_sumocfg = maps[selected_map]
-        # Erstelle die .rou.xml Datei für die Fahrzeuge
 
+        # Erstelle die .rou.xml Datei für die Fahrzeuge
         modify_vehicle_routes(selected_map)
     
         if simulate_var.get(): # Wenn Checkbox angekreuzt ist
@@ -98,7 +109,6 @@ def start_simulation():
                 print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
             
 
-
 def hudSelection():
     experience_level = 5
     age = 30
@@ -107,12 +117,12 @@ def hudSelection():
     hud_data = {}
 
     for idx, hud in enumerate(hud_frames):
-        probability = hud['entry'].get()
+        #probability = hud['entry'].get()
         brightness_level = hud['brightness_var'].get()
         information_density = hud['density_var'].get()
         information_relevance = hud['relevance_var'].get()
         fov_selection = hud['fov_var'].get()
-        hud_id = hud['hud_id']
+        vehicle_type = hud['vehicle_type'].get()
 
         distraction_level = calculations.calc_distraction(information_relevance, fov_selection, information_density, brightness_level)
         fatigueness_level = calculations.calc_fatigueness(information_relevance, fov_selection, information_density)
@@ -124,18 +134,41 @@ def hudSelection():
 
 
         # Store the calculated values in the dictionary
-    
-        hud_data[hud_id] = {
+        hud_data[vehicle_type] = {
             'reactTime': reactTime,
             'fatigueness_level': fatigueness_level,
             'awareness_level': awareness_level,
             'max_speed': maxSpeed,
             "min_Gap": minGap,
-            'hud_id': hud_id,
-            'speed_factor': speedFactor
+            'vehicle_type': vehicle_type,
+            'speed_factor': speedFactor,
+            'brightness' : brightness_level
         }
 
     return hud_data
+
+def XML_selection():
+    # Dictionary to store HUD attributes
+    xml_data = {}
+
+    for idx, hud in enumerate(hud_frames):
+        #probability = hud['entry'].get()
+        brightness_level = hud['brightness_var'].get()
+        information_density = hud['density_var'].get()
+        information_relevance = hud['relevance_var'].get()
+        fov_selection = hud['fov_var'].get()
+        vehicle_type = hud['vehicle_type'].get()
+
+
+        # Store the calculated values in the dictionary
+        xml_data[vehicle_type] = {
+            'Brightness' : brightness_level,
+            'Density': information_density,
+            'Relevance': information_relevance,
+            'FoV': fov_selection
+        }
+
+    return xml_data
 
 
 def update_max_speeds(xml_file_path, hud_data):
@@ -144,31 +177,45 @@ def update_max_speeds(xml_file_path, hud_data):
     root = tree.getroot()
 
     # Update maxSpeed, minGapLat, speedFactor, and add driverstate params for each HUD in hud_data
-    for hud_id, data in hud_data.items():
+    for vehicle_type, data in hud_data.items():
         max_speed = data['max_speed']
         minGap = data.get('min_Gap', '')  # Assuming 'min_Gap' might not always be present
         speedFactor = data.get('speed_factor', '')  # Assuming 'speed_factor' might not always be present
         reactionTime = data.get('reactTime')
 
         # Find the vType element with the specified hud_id
+        
         for vtype_elem in root.findall('vType'):
             vtype_id = vtype_elem.get('id')
 
-            # Check if the vType id matches the current hud_id
-            if vtype_id == hud_id:
+            # Check if the vType id matches the current vehicle_type
+            if vtype_id == vehicle_type:
                 # Update the maxSpeed, minGapLat, speedFactor attributes
                 vtype_elem.set('maxSpeed', str(max_speed))
                 vtype_elem.set('minGap', str(minGap))
                 vtype_elem.set('speedFactor', str(speedFactor))
 
-                # Add driverstate params
-                driverstate_param1 = ET.SubElement(vtype_elem, 'param')
-                driverstate_param1.set('key', 'has.driverstate.device')
-                driverstate_param1.set('value', 'true')
+                # Check if driverstate params already exist, and update or create accordingly
+                driverstate_params = vtype_elem.findall("./param[@key='has.driverstate.device']")
+                if driverstate_params:
+                    # Update existing param
+                    driverstate_params[0].set('value', 'true')
+                else:
+                    # Create new param
+                    driverstate_param1 = ET.SubElement(vtype_elem, 'param')
+                    driverstate_param1.set('key', 'has.driverstate.device')
+                    driverstate_param1.set('value', 'true')
 
-                driverstate_param2 = ET.SubElement(vtype_elem, 'param')
-                driverstate_param2.set('key', 'maximalReactionTime')
-                driverstate_param2.set('value', str(reactionTime))
+                # Check and update or create maximalReactionTime param
+                reaction_time_params = vtype_elem.findall("./param[@key='maximalReactionTime']")
+                if reaction_time_params:
+                    # Update existing param
+                    reaction_time_params[0].set('value', str(reactionTime))
+                else:
+                    # Create new param
+                    driverstate_param2 = ET.SubElement(vtype_elem, 'param')
+                    driverstate_param2.set('key', 'maximalReactionTime')
+                    driverstate_param2.set('value', str(reactionTime))
 
                 # Set random color (RGB)
                 color = "#{:02x}{:02x}{:02x}".format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
@@ -177,7 +224,32 @@ def update_max_speeds(xml_file_path, hud_data):
     # Write the updated XML back to the file
     tree.write(xml_file_path, encoding='utf-8', xml_declaration=True)
 
+def prettify(elem):
+    """Return a pretty-printed XML string for the Element."""
+    rough_string = ET.tostring(elem, 'utf-8')
+    reparsed = minidom.parseString(rough_string)
+    return reparsed.toprettyxml(indent="    ")  # Adjust the indentation level as needed
 
+def writeXML(hud_data):
+
+    xml_path = "hudconfig.xml"
+    # Create the root element
+    root = ET.Element("Vehicles")
+
+    # Create XML structure
+    for vehicle_type, attributes in hud_data.items():
+        vehicle_elem = ET.SubElement(root, "Vehicle", type_id=vehicle_type)
+        for key, value in attributes.items():
+            ET.SubElement(vehicle_elem, key).text = str(value)
+
+    # Pretty print the XML
+    xml_str = prettify(root)
+
+    # Write to XML file
+    with open(xml_path, "w", encoding="utf-8") as f:
+        f.write(xml_str)
+
+    print(f"XML file created successfully at {xml_path}")
 
 def start_sumo(selected_sumocfg):
     try:
@@ -202,9 +274,10 @@ def modify_vehicle_routes(selected_map):
         probabilities = []
 
         for hud in hud_frames:
-            hud_id = hud['hud_id']
             probability = float(hud['entry'].get())  # Wahrscheinlichkeit aus dem Eingabefeld
-            vehicle_types.append(hud_id)
+            vehicle_type = hud['vehicle_type'].get()  # Ausgewählter Fahrzeugtyp
+
+            vehicle_types.append(vehicle_type)
             probabilities.append(probability)
 
         # Fahrzeugtypen den Fahrzeugen in der Route zuweisen
@@ -212,18 +285,12 @@ def modify_vehicle_routes(selected_map):
             if vehicle_types:
                 vehicle_type = random.choices(vehicle_types, probabilities)[0]  # Wählt basierend auf Wahrscheinlichkeiten aus
                 vehicle.set('type', vehicle_type)
-            else:
-                print("Keine verfügbaren HUD-IDs mehr für Fahrzeuge.")
 
-        # Geändertes XML-Dokument speichern (Überschreiben der Originaldatei)
-        tree.write(original_routes_file, encoding="UTF-8", xml_declaration=True)
-        print(f"Modifizierte XML-Datei gespeichert unter: {original_routes_file}")
+        # Änderungen in die Datei schreiben
+        tree.write(original_routes_file)
 
-    except ET.ParseError as e:
-        print(f"Fehler beim Parsen der XML-Datei {original_routes_file}: {e}")
-    except FileNotFoundError as e:
-        print(f"Die Datei {original_routes_file} wurde nicht gefunden: {e}")
-
+    except FileNotFoundError:
+        print(f"Datei {original_routes_file} nicht gefunden.")
 
 # Funktion zum Schließen des Hauptfensters
 def close_window():
@@ -231,49 +298,93 @@ def close_window():
 
 def add_hud():
     global hud_count
-    hud_count += 1
 
-    # Prüfen, ob noch IDs verfügbar sind
-    if available_hud_ids:
-        hud_id = available_hud_ids.pop(0)  # Nehme die erste verfügbare ID
-        hud_idx = len(hud_frames) + 1
-        hud_frame = create_hud_frame(hud_idx, hud_id)
-        hud_frames.append(hud_frame)
-        hud_frame['frame'].pack(pady=10, padx=20, ipadx=10, ipady=10, fill="x")
-        update_scrollregion()
-    else:
+    if hud_count >= len(available_vehicle_types):
+        print("Keine weiteren Objekte können hinzugefügt werden, da keine Optionen mehr verfügbar sind.")
         messagebox.showwarning("Keine verfügbaren IDs", "Es sind keine weiteren HUD-IDs verfügbar.")
+        return
+    
+    hud_count += 1
+    hud_idx = len(hud_frames) + 1
 
-# Funktion zum Entfernen eines HUDs
+    hud_frame = create_hud_frame(hud_idx)
+    hud_frames.append(hud_frame)
+    hud_frame['frame'].pack(pady=10, padx=20, ipadx=10, ipady=10, fill="x")
+    update_scrollregion()
+    print("Added HUD: " + str(hud_idx))
+    
+# Globale Liste der verfügbaren Fahrzeugtypen
+available_vehicle_types = [
+    "vehicle.audi.a2", "vehicle.audi.tt", "vehicle.jeep.wrangler_rubicon",
+    "vehicle.chevrolet.impala", "vehicle.mini.cooper_s", "vehicle.mercedes.coupe",
+    "vehicle.bmw.grandtourer", "vehicle.citroen.c3", "vehicle.ford.mustang",
+    "vehicle.volkswagen.t2", "vehicle.lincoln.mkz_2017", "vehicle.seat.leon",
+    "vehicle.nissan.patrol"
+]
+   
 def remove_hud(hud_frame, hud_id):
     global hud_count
 
-    if (hud_count > 1):
+    if hud_count > 1:
         hud_count -= 1
 
         for idx, hud in enumerate(hud_frames):
             if hud['frame'] == hud_frame:
                 hud_frames.remove(hud)
                 hud_frame.destroy()
-                # Füge die ID wieder der Liste der verfügbaren HUD-IDs hinzu
-                available_hud_ids.append(hud_id)
-                available_hud_ids.sort()  # Optional: Sortiere die IDs für Konsistenz
+                
+                type = hud['vehicle_type'].get()
+                
+                available_vehicle_types.append(type)
+                
                 update_hud_names()
                 update_scrollregion()
                 break
     else:
         messagebox.showwarning("Achtung", "Mindestens ein HUD muss in der Liste verbleiben.")
 
+def on_selection(event):
+    dropdown = event.widget
+    selected_value = dropdown.get()
+    
+    # Finde das entsprechende Objekt und aktualisiere den gespeicherten Wert
+    for i, (label, combobox, previous_value) in enumerate(objects):
+        if combobox == dropdown:
+            # Wenn ein vorheriger Wert vorhanden war, füge ihn zurück zur Liste hinzu
+            if previous_value and previous_value not in available_vehicle_types:
+                available_vehicle_types.append(previous_value)
+            
+            # Entferne den neuen Wert aus der Liste
+            if selected_value in available_vehicle_types:
+                available_vehicle_types.remove(selected_value)
+            
+            # Aktualisiere den gespeicherten Wert im Objekt
+            objects[i] = (label, combobox, selected_value)
+            break
+    
+    # Aktualisiere alle Dropdown-Menüs
+    update_comboboxes()
+
+def update_comboboxes():
+    for _, dropdown, _ in objects:
+        if dropdown.winfo_exists():  # Überprüfen, ob das Widget existiert
+            dropdown['values'] = available_vehicle_types
+
 # Funktion zur Aktualisierung der HUD-Namen nach Entfernen eines HUDs
 def update_hud_names():
     for hud_idx, hud_frame in enumerate(hud_frames, start=1):
         hud_frame['header'].configure(text=f"HUD {hud_idx}")
 
-# Funktion zur Erstellung des Frames für ein HUD
-def create_hud_frame(hud_number, hud_id):
+def create_hud_frame(hud_number):
     frame = tk.Frame(scrollable_frame, bg="white", bd=2, relief="raised")
+
+    '''
     header = tk.Label(frame, text=f"HUD {hud_number}", font=('Helvetica', 12, 'bold'), bg="white")
     header.grid(row=0, column=0, columnspan=3, pady=10, sticky='n')
+    '''
+    header_entry = tk.Entry(frame, width=20, font=('Helvetica', 14, 'bold'))
+    header_entry.insert(0, f"HUD {hud_number}")
+    header_entry.grid(row=0, column=0,pady=10, sticky='n' )
 
     label_prob = tk.Label(frame, text="Wahrscheinlichkeit eingeben:", bg="white")
     label_prob.grid(row=1, column=0, pady=5, padx=10, sticky='w')
@@ -344,19 +455,45 @@ def create_hud_frame(hud_number, hud_id):
     fov_question_button.bind("<Enter>", lambda event, tooltip=fov_tooltip: tooltip.show_tooltip())
     fov_question_button.bind("<Leave>", lambda event, tooltip=fov_tooltip: tooltip.hide_tooltip())
 
-    remove_button = tk.Button(frame, text="HUD entfernen", command=lambda: remove_hud(frame, hud_id), bg="#ff6347", fg="white")
-    remove_button.grid(row=6, column=0, columnspan=3, pady=10)
+    # Dropdown-Menü für Fahrzeugtyp (nur verfügbare Typen anzeigen)
+    label_vehicle_type = tk.Label(frame, text="Fahrzeugtyp auswählen:", bg="white")
+    label_vehicle_type.grid(row=6, column=0, pady=5, padx=10, sticky='w')
+
+    vehicle_type = tk.StringVar(frame)
+    vehicle_type_menu = ttk.Combobox(frame, textvariable=vehicle_type, values=available_vehicle_types, state="readonly", postcommand=lambda: dropdown_opened(vehicle_type_menu))
+    vehicle_type_menu.current(hud_number-1)
+    vehicle_type_menu.grid(row=6, column=1, pady=5, padx=10, sticky='w')
+
+    # Binde die Auswahländerung an den Eventhandler
+    vehicle_type_menu.bind('<<ComboboxSelected>>', on_selection)
+    
+    # Speichere das neue Objekt und den initialen Wert (leer)
+    objects.append((label_vehicle_type, vehicle_type_menu, ""))
+
+    remove_button = tk.Button(frame, text="HUD entfernen", command=lambda: remove_hud(frame, hud_number), bg="#ff6347", fg="white")
+    remove_button.grid(row=7, column=0, columnspan=3, pady=10)
+    print("Created HUD: " + str(hud_number))
 
     return {
         'frame': frame,
-        'header': header,
+        'header': header_entry,
         'entry': entry,
         'brightness_var': brightness_var,
         'density_var': density_var,
         'relevance_var': relevance_var,
         'fov_var': fov_var,
-        'hud_id': hud_id
+        'vehicle_type': vehicle_type,
+        'hud_id': hud_number
     }
+
+objects=[]
+
+def dropdown_opened(dropdown):
+    print("Das Dropdown-Menü wurde geöffnet!")
+    dropdown['values'] = available_vehicle_types  # Aktualisiere die Werte des Dropdown-Menüs
+
+def getList():
+    return available_vehicle_types
 
 # ToolTip Klasse zur Erstellung der Tooltip-Fenster
 class ToolTip:
@@ -401,6 +538,8 @@ simulate_var = tk.BooleanVar()
 simulate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
 spectate_var = tk.BooleanVar()
 spectate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
+hudless_var = tk.BooleanVar()
+hudless_var.set(False)
 
 # Label für die Auswahl der Map
 map_label = tk.Label(root, text="Wähle eine Map:")
@@ -410,6 +549,7 @@ map_label.pack(pady=10)
 map_list = tk.Listbox(root)
 for map_name in maps:
     map_list.insert(tk.END, map_name)
+
 # Standardmäßig die erste Map auswählen
 map_list.selection_set(0)
 map_list.pack()
@@ -421,6 +561,10 @@ simulate_checkbox.pack()
 # Checkbox für den spectator
 spectator_checkbox = tk.Checkbutton(root, text="first person spectator starten", variable=spectate_var)
 spectator_checkbox.pack()
+
+# Checkbox für den spectator
+hudless_checkbox = tk.Checkbutton(root, text="Simulate a car without HUD", variable=hudless_var)
+hudless_checkbox.pack()
 
 # Fenstergröße und Position festlegen
 window_width = 800
