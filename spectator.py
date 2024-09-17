@@ -59,7 +59,6 @@ class CarlaCameraClient:
             # Add more icons as needed
         }  
         self.icon_positions = [
-            (0.60, 0.45),#0
             (0.40, 0.45),#1
             (0.60, 0.35),#2
             (0.60, 0.55),#3
@@ -132,7 +131,6 @@ class CarlaCameraClient:
             print(relevance)
             print(fov)
             
-            print("---------1")
             if brightness == "very dark":
                 self.hud_alpha = 1
             elif brightness == "dark":
@@ -145,12 +143,10 @@ class CarlaCameraClient:
                 self.hud_alpha = 0.1
 
 
-            print("---------2")
             print(fov)
             if fov == "small":
                         self.iconscale = (90,90)
                         self.icon_positions = [
-                            (0.60, 0.45),#0
                             (0.60, 0.40),#2
                             (0.60, 0.50),#3
                             (0.60, 0.35),#4
@@ -167,7 +163,6 @@ class CarlaCameraClient:
             elif fov == "medium":
                         self.iconscale = (90,90)
                         self.icon_positions = [
-                            (0.60, 0.45),#0
                             (0.50, 0.45),#1
                             (0.60, 0.40),#2
                             (0.60, 0.50),#3
@@ -183,7 +178,6 @@ class CarlaCameraClient:
             elif fov == "large":
                         self.iconscale = (90,90)
                         self.icon_positions = [
-                            (0.60, 0.45),#0
                             (0.40, 0.45),#1
                             (0.60, 0.35),#2
                             (0.60, 0.55),#3
@@ -198,7 +192,6 @@ class CarlaCameraClient:
                         ]
 
 
-            print("---------3")
             if relevance == "unimportant":
                 self.show_speed_text = True
                 self.show_icon_stopwatch = True
@@ -215,22 +208,18 @@ class CarlaCameraClient:
                 self.show_icon_minus = True
                 self.show_icon_placeholder = True
             elif relevance == "neutral":
-                self.show_speed_text = True
                 self.show_icon_stopwatch = True
                 self.show_speed_text = True
                 self.show_icon_clock = True
                 self.show_icon_idea = True
-                self.show_icon_music_player = True
                 self.show_icon_navigation = True
-                self.show_icon_compass = True
                 self.show_icon_minus = True
+                self.show_icon_battery = True
             elif relevance == "important":
-                self.show_speed_text = True
-                self.show_icon_stopwatch = True
+                self.speed_hud_location = (40,45)
                 self.show_speed_text = True
                 self.show_icon_navigation = True
                 self.show_icon_minus = True 
-                self.show_icon_idea = True
         else:
             self.reset_hud()
 
@@ -413,12 +402,13 @@ class CarlaCameraClient:
         poscount = 0
         for icon_name, filename in self.icons.items():
             if getattr(self, f'show_{icon_name}', False):
-                if(icon_name == 'icon_stopwatch'):
-                    self.speed_hud_location = self.icon_positions[poscount]
                 icon = cv2.imread(os.path.join(self.icon_path, filename), cv2.IMREAD_UNCHANGED)
                 icon = cv2.resize(icon, self.iconscale)  # Resize the icon if needed
-                abs_position = (int(height * self.icon_positions[poscount][0]), int(width * self.icon_positions[poscount][1]))
-                poscount=poscount+1
+                if(icon_name == 'icon_stopwatch'):
+                    abs_position = (int(height * self.speed_hud_location[0]), int(width * self.speed_hud_location[1]))
+                else:
+                    abs_position = (int(height * self.icon_positions[poscount][0]), int(width * self.icon_positions[poscount][1]))
+                    poscount=poscount+1
                 self.overlay_icon(image, icon, abs_position)
 
     def overlay_icon(self, image, icon, position):

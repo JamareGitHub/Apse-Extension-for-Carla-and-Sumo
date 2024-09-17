@@ -35,14 +35,14 @@ hud_count = 0
 
 # Globale Liste der verfügbaren Fahrzeugtypen
 available_vehicle_types = [
-    "vehicle.audi.a2", "vehicle.audi.tt", "vehicle.jeep.wrangler_rubicon",
+    "vehicle.audi.a2", "vehicle.audi.tt",
     "vehicle.chevrolet.impala", "vehicle.mini.cooper_s", "vehicle.mercedes.coupe",
     "vehicle.bmw.grandtourer", "vehicle.citroen.c3", "vehicle.ford.mustang",
     "vehicle.volkswagen.t2", "vehicle.lincoln.mkz_2017", "vehicle.seat.leon"
 ]
 
 all_vehicle_types = [
-    "vehicle.audi.a2", "vehicle.audi.tt", "vehicle.jeep.wrangler_rubicon",
+    "vehicle.audi.a2", "vehicle.audi.tt",
     "vehicle.chevrolet.impala", "vehicle.mini.cooper_s", "vehicle.mercedes.coupe",
     "vehicle.bmw.grandtourer", "vehicle.citroen.c3", "vehicle.ford.mustang",
     "vehicle.volkswagen.t2", "vehicle.lincoln.mkz_2017", "vehicle.seat.leon"

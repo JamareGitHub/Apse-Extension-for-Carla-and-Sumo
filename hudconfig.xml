@@ -1,101 +1,31 @@
 <?xml version="1.0" ?>
 <Vehicles>
-    <Vehicle type_id="vehicle.audi.a2">
-        <HUDName>HUD-AudiA2</HUDName>
-        <Brightness>dark</Brightness>
-        <Density>max</Density>
-        <Relevance>important</Relevance>
-        <FoV>small</FoV>
-    </Vehicle>
-    <Vehicle type_id="vehicle.seat.leon">
-        <HUDName>HUD-seat.leon</HUDName>
-        <Brightness>dark</Brightness>
-        <Density>max</Density>
-        <Relevance>average</Relevance>
-        <FoV>large</FoV>
-    </Vehicle>    
-    <Vehicle type_id="vehicle.audi.tt">
-        <HUDName>HUD-audi.tt</HUDName>
-        <Brightness>average</Brightness>
-        <Density>min</Density>
-        <Relevance>important</Relevance>
-        <FoV>medium</FoV>
-    </Vehicle>
-    <Vehicle type_id="vehicle.jeep.wrangler_rubicon">
-        <HUDName>HUD-jeep.wrangler_rubicon</HUDName>
-        <Brightness>bright</Brightness>
-        <Density>min</Density>
-        <Relevance>important</Relevance>
-        <FoV>large</FoV>
-    </Vehicle>    
-    <Vehicle type_id="vehicle.audi.impala">
-        <HUDName>HUD-audi.impala</HUDName>
-        <Brightness>very_bright</Brightness>
-        <Density>min</Density>
-        <Relevance>unimportant</Relevance>
-        <FoV>small</FoV>
-    </Vehicle>
-    <Vehicle type_id="vehicle.chevrolet.impala">
-        <HUDName>HUD-chevrolet.impala</HUDName>
-        <Brightness>average</Brightness>
-        <Density>min</Density>
-        <Relevance>unimportant</Relevance>
-        <FoV>small</FoV>
-    </Vehicle>    
-    <Vehicle type_id="vehicle.mini.cooper_s">
-        <HUDName>HUD-mini.cooper_s</HUDName>
-        <Brightness>average</Brightness>
-        <Density>min</Density>
-        <Relevance>unimportant</Relevance>
-        <FoV>small</FoV>
-    </Vehicle>
-    <Vehicle type_id="vehicle.mercedes.coupe">
-        <HUDName>HUD-mercedes.coupe</HUDName>
-        <Brightness>average</Brightness>
-        <Density>min</Density>
-        <Relevance>unimportant</Relevance>
-        <FoV>small</FoV>
-    </Vehicle>    
-    <Vehicle type_id="vehicle.volkswagen.t2">
-        <HUDName>HUD-volkswagen.t2</HUDName>
-        <Brightness>average</Brightness>
-        <Density>min</Density>
-        <Relevance>unimportant</Relevance>
-        <FoV>small</FoV>
-    </Vehicle>
-    <Vehicle type_id="vehicle.bmw.grandtourer">
-        <HUDName>HUD-bmw.grandtourer</HUDName>
-        <Brightness>average</Brightness>
-        <Density>min</Density>
-        <Relevance>unimportant</Relevance>
-        <FoV>small</FoV>
-    </Vehicle>    
-    <Vehicle type_id="vehicle.citroen.c3">
-        <HUDName>HUD-citroen.c3</HUDName>
-        <Brightness>average</Brightness>
-        <Density>min</Density>
-        <Relevance>unimportant</Relevance>
-        <FoV>small</FoV>
-    </Vehicle>
-    <Vehicle type_id="vehicle.ford.mustang">
-        <HUDName>HUD-ford.mustang</HUDName>
-        <Brightness>average</Brightness>
-        <Density>min</Density>
-        <Relevance>unimportant</Relevance>
-        <FoV>small</FoV>
-    </Vehicle>    
-    <Vehicle type_id="vehicle.lincoln.mkz_2017">
-        <HUDName>HUD-lincoln.mkz_2017</HUDName>
-        <Brightness>average</Brightness>
-        <Density>min</Density>
-        <Relevance>unimportant</Relevance>
-        <FoV>small</FoV>
-    </Vehicle>    
-    <Vehicle type_id="vehicle.nissan.patrol">
-        <HUDName>HUD-nissan.patrol</HUDName>
-        <Brightness>average</Brightness>
-        <Density>min</Density>
-        <Relevance>unimportant</Relevance>
-        <FoV>small</FoV>
-    </Vehicle>
+	<Vehicle type_id="vehicle.nissan.patrol">
+		<HUDName>No HUD</HUDName>
+		<Brightness>none</Brightness>
+		<Density>none</Density>
+		<Relevance>none</Relevance>
+		<FoV>none</FoV>
+	</Vehicle>
+	<Vehicle type_id="vehicle.audi.a2">
+		<HUDName>HUD 1</HUDName>
+		<Brightness>very dark</Brightness>
+		<Density>minimum</Density>
+		<Relevance>important</Relevance>
+		<FoV>small</FoV>
+	</Vehicle>
+	<Vehicle type_id="vehicle.audi.tt">
+		<HUDName>HUD 2</HUDName>
+		<Brightness>very dark</Brightness>
+		<Density>average</Density>
+		<Relevance>neutral</Relevance>
+		<FoV>medium</FoV>
+	</Vehicle>
+	<Vehicle type_id="vehicle.jeep.wrangler_rubicon">
+		<HUDName>HUD 3</HUDName>
+		<Brightness>very dark</Brightness>
+		<Density>maximum</Density>
+		<Relevance>unimportant</Relevance>
+		<FoV>large</FoV>
+	</Vehicle>
 </Vehicles>
