@@ -9,8 +9,6 @@ import calculations
 from tkinter import ttk
 import xml.etree.cElementTree as ET
 import xml.dom.minidom as minidom
-from dicttoxml import dicttoxml
-from xmler import dict2xml
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
 #carla_base_dir = r"F:\Softwareprojekt\CARLA_0.9.15\WindowsNoEditor"
@@ -64,27 +62,48 @@ base_frame = {
         'hud_id': 999  # Eindeutige ID für das HUD
     }
 
+def are_all_fields_valid():
+    """Überprüft, ob alle Eingabefelder korrekt ausgefüllt sind."""
+    all_valid = True
+
+    # Beispielhafte Überprüfungen für Eingabefelder
+    for hud_frame in hud_frames:
+        entry_value = hud_frame['entry'].get()
+        if not validate_integer_input(entry_value):
+            hud_frame['entry'].config(bg="red")
+            all_valid = False
+        else:
+            hud_frame['entry'].config(bg="white")
+
+    # Füge weitere Überprüfungen für andere notwendige Felder hinzu
+    if not map_list.curselection():
+        messagebox.showwarning("No map selected", "Please select a map for the simulation.")
+        all_valid = False
+    
+    # Füge hier weitere spezifische Validierungslogik hinzu, falls nötig
+
+    return all_valid
+
 def start_simulation():
+    if not are_all_fields_valid():
+        print("Ein oder mehrere Felder sind ungültig.")
+        messagebox.showwarning("Invalid Inputs", "Please enter valid inputs for all the input fields!")
+        return
 
     selected_index = map_list.curselection()
 
-    if selected_index == ():
-        print("no map")
-        messagebox.showwarning("No map selected", "Please select a map for the simulation.")
-        return
-        
     xml_path = r"hudconfig.xml"
 
     global hud_count
 
     hud_data = hudSelection()
-    #xml_data = XML_selection()
+    # xml_data = XML_selection()
         
     print("Gespeicherte HUD-Daten:")
     for vehicle_type in hud_data.items():
        print(f"{vehicle_type}")
 
-    update_max_speeds(carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml",hud_data)
+    update_max_speeds(carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml", hud_data)
 
     if hudless_var.get():
         print("BASE CAR EXISTS!")
@@ -98,8 +117,7 @@ def start_simulation():
         # Erstelle die .rou.xml Datei für die Fahrzeuge
         modify_vehicle_routes(selected_map)
     
-        if simulate_var.get(): # Wenn Checkbox angekreuzt ist
-
+        if simulate_var.get():  # Wenn Checkbox angekreuzt ist
             carla_exe = os.path.join(carla_base_dir, "CarlaUE4.exe")
 
             try:
@@ -115,9 +133,7 @@ def start_simulation():
                 print("Starte Konfigurationsskript: {}".format(config_script))
                 config_command = ["python", config_script, "--map", selected_map]
                 configsubprocess = subprocess.Popen(config_command, cwd=os.path.dirname(config_script))
-                # Warte kurz vor der Ausführung des nächsten Befehls
                 configsubprocess.wait()
-                #time.sleep(5)
                 print("Wartezeit vor dem Start des Synchronisationsskripts.")
 
                 # Führe das Synchronisationsskript aus
@@ -137,7 +153,7 @@ def start_simulation():
                 print("starting spectator")
                 spectatorpath = "./spectator.py"
                 spectatordir = os.path.dirname(spectatorpath)
-                subprocess.Popen(["python",spectatorpath , spectatordir])
+                subprocess.Popen(["python", spectatorpath, spectatordir])
                 print("started spectator")
             
             except FileNotFoundError as e:
@@ -256,7 +272,7 @@ def writeXML(hud_frames):
 
         # Erstelle das XML-Element für das Fahrzeug
         vehicle_element = ET.SubElement(root, "Vehicle", type_id=vehicle_type)
-        ET.SubElement(vehicle_element, "Name").text = hud_name
+        ET.SubElement(vehicle_element, "HUDName").text = hud_name
         ET.SubElement(vehicle_element, "Brightness").text = brightness
         ET.SubElement(vehicle_element, "Density").text = density
         ET.SubElement(vehicle_element, "Relevance").text = relevance
@@ -425,7 +441,6 @@ def remove_hud(hud_id):
 def on_selection(event):
     dropdown = event.widget
     selected_value = dropdown.get()
-    print("Test-1")
     
     # Debug-Ausgabe der objects-Liste
     print("Objects before loop:")
@@ -434,18 +449,14 @@ def on_selection(event):
 
     # Finde das entsprechende Objekt und aktualisiere den gespeicherten Wert
     for i, (label, combobox, previous_value) in enumerate(objects):
-        print("Test0")
         if combobox == dropdown:
-            print("Test1")
             # Wenn ein vorheriger Wert vorhanden war, füge ihn zurück zur Liste hinzu
             if previous_value not in available_vehicle_types:
                 available_vehicle_types.append(previous_value)
-                print("Test2")
-            
+                
             # Entferne den neuen Wert aus der Liste
             if selected_value in available_vehicle_types:
                 available_vehicle_types.remove(selected_value)
-                print("Test3")
             
             # Aktualisiere den gespeicherten Wert im Objekt
             objects[i] = (label, combobox, selected_value)
@@ -461,20 +472,22 @@ def on_selection(event):
 
 
 def update_comboboxes():
-    print("Test-2")
     for _, dropdown, _ in objects:
         if dropdown.winfo_exists():  # Überprüfen, ob das Widget existiert
             dropdown['values'] = available_vehicle_types
 
+def validate_integer_input(value):
+    """Validiert die Eingabe als ganze Zahl, die nicht leer und nicht 0 ist."""
+    return value.isdigit() and int(value) > 0
 
-def validate_integer_input(P):
-    """Validiert die Eingabe als ganze Zahl."""
-    if P.isdigit() or P == "":  # Leere Eingabe ist erlaubt, falls du es erlauben möchtest
-        return True
+def on_validate_input(value, entry):
+    """Callback-Funktion für die Validierung des Eingabefeldes."""
+    if validate_integer_input(value):
+        entry.config(bg="white")  # Setze die Hintergrundfarbe auf Weiß, wenn gültig
     else:
-        messagebox.showerror("Ungültige Eingabe", "Bitte geben Sie nur ganze Zahlen ein.")
-        return False
-    
+        entry.config(bg="red")  # Setze die Hintergrundfarbe auf Rot, wenn ungültig
+    return True  # Erlaube die Eingabe weiterhin
+
 def create_hud_frame():
     # Berechne die HUD-Nummer basierend auf der Anzahl aktuell vorhandener HUDs
     hud_number = len(hud_frames) + 1
@@ -483,6 +496,7 @@ def create_hud_frame():
     frame = tk.Frame(scrollable_frame, bg="white", bd=2, relief="raised")
 
     # Header für den HUD-Namen (wird initial als "HUD X" gesetzt)
+    global header_entry
     header_entry = tk.Entry(frame, width=20, font=('Helvetica', 14, 'bold'))
     header_entry.insert(0, f"HUD {hud_number}")
     header_entry.grid(row=0, column=0, pady=10, sticky='n')
@@ -491,12 +505,17 @@ def create_hud_frame():
     label_prob = tk.Label(frame, text="Wahrscheinlichkeit eingeben:", bg="white")
     label_prob.grid(row=1, column=0, pady=5, padx=10, sticky='w')
     
-    entry = tk.Entry(frame, width=15)
-    entry.insert(0, "0.5")  
-    entry.grid(row=1, column=1, pady=5, padx=10, sticky='w')
+    probability_var = tk.StringVar()
+    probability_entry = tk.Entry(frame, textvariable=probability_var, width=15)
+
+    # Register the validation function
+    validate_command = frame.register(lambda value: on_validate_input(value, probability_entry))
+    probability_entry.config(validate="key", validatecommand=(validate_command, "%P"))
+    probability_entry.insert(0, "1")  # Set initial value to 1
+    probability_entry.grid(row=1, column=1, pady=5, padx=10, sticky='w')
 
     # Tooltip für Wahrscheinlichkeit
-    prob_tooltip = ToolTip(entry, "Wahrscheinlichkeit, dass das HUD angezeigt wird.")
+    prob_tooltip = ToolTip(probability_entry, "Wahrscheinlichkeit, dass das HUD angezeigt wird.")
 
     # Button für Fragezeichen-Tooltip
     prob_question_button = tk.Button(frame, text="?", command=prob_tooltip.show_tooltip, width=3)
@@ -586,7 +605,7 @@ def create_hud_frame():
     hud = {
         'frame': frame,
         'header': header_entry,
-        'entry': entry,
+        'entry': probability_entry,
         'brightness_var': brightness_var,
         'density_var': density_var,
         'relevance_var': relevance_var,
