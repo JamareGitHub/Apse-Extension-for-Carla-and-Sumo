@@ -9,6 +9,7 @@ import calculations
 from tkinter import ttk
 import xml.etree.cElementTree as ET
 import xml.dom.minidom as minidom
+from PIL import Image, ImageTk
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
 #carla_base_dir = r"F:\Softwareprojekt\CARLA_0.9.15\WindowsNoEditor"
@@ -35,14 +36,14 @@ hud_count = 0
 
 # Globale Liste der verfügbaren Fahrzeugtypen
 available_vehicle_types = [
-    "vehicle.audi.a2", "vehicle.audi.tt", "vehicle.jeep.wrangler_rubicon",
+    "vehicle.audi.a2", "vehicle.audi.tt",
     "vehicle.chevrolet.impala", "vehicle.mini.cooper_s", "vehicle.mercedes.coupe",
     "vehicle.bmw.grandtourer", "vehicle.citroen.c3", "vehicle.ford.mustang",
     "vehicle.volkswagen.t2", "vehicle.lincoln.mkz_2017", "vehicle.seat.leon"
 ]
 
 all_vehicle_types = [
-    "vehicle.audi.a2", "vehicle.audi.tt", "vehicle.jeep.wrangler_rubicon",
+    "vehicle.audi.a2", "vehicle.audi.tt",
     "vehicle.chevrolet.impala", "vehicle.mini.cooper_s", "vehicle.mercedes.coupe",
     "vehicle.bmw.grandtourer", "vehicle.citroen.c3", "vehicle.ford.mustang",
     "vehicle.volkswagen.t2", "vehicle.lincoln.mkz_2017", "vehicle.seat.leon"
@@ -644,25 +645,14 @@ class ToolTip:
         if self.tooltip_window:
             self.tooltip_window.destroy()
             self.tooltip_window = None
-
 # Funktion zur Aktualisierung der Scrollregion des Canvas
 def update_scrollregion():
     canvas.update_idletasks()
     canvas.config(scrollregion=canvas.bbox("all"))
 
-# Hauptfenster erstellen
-root = tk.Tk()
-root.title("SUMO Simulation Launcher")
-
-# Variable für den Status der Checkbox
-simulate_var = tk.BooleanVar()
-simulate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
-spectate_var = tk.BooleanVar()
-spectate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
-
-hudless_var = tk.BooleanVar()
-hudless_var.set(False)
-
+# Funktion zum Schließen des Fensters
+def close_window():
+    root.quit()
 
 # Funktion, um die aktuelle Auswahl zu speichern
 selected_map_index = None
@@ -679,31 +669,9 @@ def reselect_map():
         map_list.selection_set(selected_map_index)  # Die zuvor gespeicherte Auswahl wieder setzen
         map_list.activate(selected_map_index)  # Fokus auf die ausgewählte Map setzen
 
-# Label für die Auswahl der Map
-map_label = tk.Label(root, text="Wähle eine Map:")
-map_label.pack(pady=10)
-
-# Listbox für die Auswahl der Map
-map_list = tk.Listbox(root)
-for map_name in maps:
-    map_list.insert(tk.END, map_name)
-
-map_list.pack()
-
-# Binde das Auswahlereignis, um die Map zu speichern
-map_list.bind('<<ListboxSelect>>', on_map_select)
-
-# Checkbox für die Simulation
-simulate_checkbox = tk.Checkbutton(root, text="Co-Simulation mit Carla starten", variable=simulate_var)
-simulate_checkbox.pack()
-
-# Checkbox für den spectator
-spectator_checkbox = tk.Checkbutton(root, text="first person spectator starten", variable=spectate_var)
-spectator_checkbox.pack()
-
-# Checkbox für den spectator
-hudless_checkbox = tk.Checkbutton(root, text="Simulate a car without HUD", variable=hudless_var)
-hudless_checkbox.pack()
+# Hauptfenster erstellen
+root = tk.Tk()
+root.title("SUMO Simulation Launcher")
 
 # Fenstergröße und Position festlegen
 window_width = 800
@@ -714,9 +682,96 @@ x_coordinate = (screen_width - window_width) // 2
 y_coordinate = (screen_height - window_height) // 2
 root.geometry(f"{window_width}x{window_height}+{x_coordinate}+{y_coordinate}")
 
+# Tab-Widget erstellen
+notebook = ttk.Notebook(root)
+notebook.pack(expand=True, fill="both")
+
+# Erstellen des Main Tabs
+main_tab = ttk.Frame(notebook)
+notebook.add(main_tab, text="Main")
+
+# Erstellen des Hilfe Tabs
+help_tab = ttk.Frame(notebook)
+notebook.add(help_tab, text="Help")
+
+help_text = tk.Label(help_tab, text="This is the help tab. Here you can find explanations for the different HUD variables.", font=("Arial", 12), justify="left")
+help_text.pack(pady=10, padx=10)
+
+# ---- Überschrift auf dem Hilfe-Tab ----
+header_label = tk.Label(help_tab, text="Brightness", font=("Arial", 14, "bold"), justify="center")
+header_label.pack(pady=10)
+
+# ---- Weiterer Text auf dem Hilfe-Tab ----
+description_label = tk.Label(help_tab, text=(
+    "The brightness level represents how visible the HUD will be for the driver. \n" 
+    "While the option 'very dark' will make the HUD extremly visible, \n"
+    "the option 'very bright' makes the HUD almost see-through."
+), font=("Arial", 12), justify="left")
+description_label.pack(pady=10, padx=10)
+
+# Bilder laden und anpassen
+image1 = Image.open("7498864.png")
+image1 = image1.resize((200, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image1_tk = ImageTk.PhotoImage(image1)
+
+image2 = Image.open("7498864.png")
+image2 = image2.resize((200, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image2_tk = ImageTk.PhotoImage(image2)
+
+# Frame für die Bilder und Beschreibungen erstellen
+frame = tk.Frame(help_tab)
+frame.pack(pady=20)
+
+# Bild 1 und Bildbeschreibung hinzufügen
+label_image1 = tk.Label(frame, image=image1_tk)
+label_image1.grid(row=0, column=0, padx=10)
+
+label_desc1 = tk.Label(frame, text="Brightness level: 'Very dark'")
+label_desc1.grid(row=1, column=0, padx=10, pady=5)
+
+# Bild 2 und Bildbeschreibung hinzufügen
+label_image2 = tk.Label(frame, image=image2_tk)
+label_image2.grid(row=0, column=1, padx=10)
+
+label_desc2 = tk.Label(frame, text="Brightness level: 'Very bright'")
+label_desc2.grid(row=1, column=1, padx=10, pady=5)
+
+# Variable für den Status der Checkbox
+simulate_var = tk.BooleanVar()
+simulate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
+spectate_var = tk.BooleanVar()
+spectate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
+hudless_var = tk.BooleanVar()
+hudless_var.set(False)
+
+# Label für die Auswahl der Map
+map_label = tk.Label(main_tab, text="Wähle eine Map:")
+map_label.pack(pady=10)
+
+# Listbox für die Auswahl der Map
+map_list = tk.Listbox(main_tab)
+for map_name in maps:
+    map_list.insert(tk.END, map_name)
+map_list.pack()
+
+# Binde das Auswahlereignis, um die Map zu speichern
+map_list.bind('<<ListboxSelect>>', on_map_select)
+
+# Checkbox für die Simulation
+simulate_checkbox = tk.Checkbutton(main_tab, text="Co-Simulation mit Carla starten", variable=simulate_var)
+simulate_checkbox.pack()
+
+# Checkbox für den spectator
+spectator_checkbox = tk.Checkbutton(main_tab, text="first person spectator starten", variable=spectate_var)
+spectator_checkbox.pack()
+
+# Checkbox für den spectator
+hudless_checkbox = tk.Checkbutton(main_tab, text="Simulate a car without HUD", variable=hudless_var)
+hudless_checkbox.pack()
+
 # Hintergrundfarbe für den Canvas und Scrollbar hinzufügen
-canvas = tk.Canvas(root, bg="#f0f0f0")
-scrollbar = tk.Scrollbar(root, orient="vertical", command=canvas.yview)
+canvas = tk.Canvas(main_tab, bg="#f0f0f0")
+scrollbar = tk.Scrollbar(main_tab, orient="vertical", command=canvas.yview)
 
 # Scrollable Frame erstellen
 scrollable_frame = tk.Frame(canvas, bg="#f0f0f0")
@@ -741,17 +796,17 @@ def create_default_huds():
         add_hud()
 
 # Button Frame für die Bedienelemente
-button_frame = tk.Frame(root, bg="#f0f0f0")
+button_frame = tk.Frame(main_tab, bg="#f0f0f0")
 button_frame.pack(pady=10)
 
 # Buttons erstellen und einfügen
 add_hud_button = tk.Button(button_frame, text="HUD hinzufügen", command=add_hud, bg="#4682b4", fg="white")
 add_hud_button.pack(side="left", padx=20)
 
-start_button = tk.Button(root, text="Simulation starten", command=start_simulation, bg="#32cd32", fg="white")
+start_button = tk.Button(main_tab, text="Simulation starten", command=start_simulation, bg="#32cd32", fg="white")
 start_button.pack(pady=10)
 
-close_button = tk.Button(root, text="Schließen", command=close_window, bg="#a9a9a9", fg="white")
+close_button = tk.Button(main_tab, text="Schließen", command=close_window, bg="#a9a9a9", fg="white")
 close_button.pack(pady=10)
 
 # unbind scrolling over the combobox so that we don't scroll through options (optional)
@@ -772,10 +827,8 @@ def on_leave(e):
     scrollable_frame.bind_all("<MouseWheel>", _on_mouse_wheel)
 
 # while hovering over a listbox, dont scroll the canvas on mousewheel, otherwise do
-scrollable_frame.bind_class('Listbox', '<Enter>',
-                       on_enter)
-scrollable_frame.bind_class('Listbox', '<Leave>',
-                       on_leave)
+scrollable_frame.bind_class('Listbox', '<Enter>', on_enter)
+scrollable_frame.bind_class('Listbox', '<Leave>', on_leave)
 
 # Standard-HUDs erstellen
 create_default_huds()
