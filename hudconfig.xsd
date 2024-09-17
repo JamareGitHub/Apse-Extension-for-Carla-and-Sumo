@@ -58,6 +58,7 @@
         <xs:element name="Vehicle" maxOccurs="unbounded" minOccurs="0">
           <xs:complexType>
             <xs:sequence>
+              <xs:element name="HUDName" type="xs:string"/>
               <xs:element name="Brightness" type="BrightnessType"/>
               <xs:element name="Density" type="DensityType"/>
               <xs:element name="Relevance" type="RelevanceType"/>
