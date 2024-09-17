@@ -58,18 +58,19 @@ class CarlaCameraClient:
             # Add more icons as needed
         }  
         self.icon_positions = [
-            (0.60, 0.45),
-            (0.60, 0.5),
-            (0.60, 0.4),
-            (0.50, 0.45),
-            (0.60, 0.3),
-            (0.60, 0.35),
-            (0.50, 0.35), 
-            (0.60, 0.55),
-            (0.60, 0.6),
-            (0.50, 0.5),
-            (0.50, 0.4),
-            (0.50, 0.55)
+            (0.60, 0.45),#0
+            (0.40, 0.45),#1
+            (0.60, 0.35),#2
+            (0.60, 0.55),#3
+            (0.60, 0.25),#4
+            (0.60, 0.65),#5
+            (0.40, 0.35),#6
+            (0.40, 0.55),#7
+            (0.40, 0.25),#8
+            (0.40, 0.65),#9
+            (0.60, 0.15),#10
+            (0.60, 0.75)#11
+            
         ]
         self.show_speed_text = False
         self.show_icon_stopwatch = False
@@ -137,6 +138,61 @@ class CarlaCameraClient:
                 self.hud_alpha = 0.3
             elif brightness == "very bright":
                 self.hud_alpha = 0.1
+
+                
+
+
+
+            if fov == "small":
+                        self.iconscale = (90,90)
+                        self.icon_positions = [
+                            (0.60, 0.45),#0
+                            (0.60, 0.40),#2
+                            (0.60, 0.50),#3
+                            (0.60, 0.35),#4
+                            (0.60, 0.55),#5
+                            (0.60, 0.30),#10
+                            (0.60, 0.60)#11
+                            (0.50, 0.45),#1
+                            (0.50, 0.50),#7
+                            (0.50, 0.40),#6
+                            (0.50, 0.55),#9
+                            (0.50, 0.35),#8
+                            
+                        ]
+            elif fov == "medium":
+                        self.iconscale = (90,90)
+                        self.icon_positions = [
+                            (0.60, 0.45),#0
+                            (0.50, 0.45),#1
+                            (0.60, 0.40),#2
+                            (0.60, 0.50),#3
+                            (0.60, 0.35),#4
+                            (0.60, 0.55),#5
+                            (0.50, 0.40),#6
+                            (0.50, 0.50),#7
+                            (0.50, 0.35),#8
+                            (0.50, 0.55),#9
+                            (0.60, 0.30),#10
+                            (0.60, 0.60)#11
+                        ]
+            elif fov == "large":
+                        self.iconscale = (90,90)
+                        self.icon_positions = [
+                            (0.60, 0.45),#0
+                            (0.40, 0.45),#1
+                            (0.60, 0.35),#2
+                            (0.60, 0.55),#3
+                            (0.60, 0.25),#4
+                            (0.60, 0.65),#5
+                            (0.40, 0.35),#6
+                            (0.40, 0.55),#7
+                            (0.40, 0.25),#8
+                            (0.40, 0.65),#9
+                            (0.60, 0.15),#10
+                            (0.60, 0.75)#11
+                        ]
+
 
             if relevance == "unimportant":
                 self.show_speed_text = True
@@ -216,7 +272,22 @@ class CarlaCameraClient:
         self.show_icon_minus = False
         self.show_icon_placeholder = False
         self.hud_alpha = 1
-        self.iconscale = (90,90)
+        self.iconscale = (90,90)        
+        self.icon_positions = [
+            (0.60, 0.45),#0
+            (0.50, 0.45),#1
+            (0.60, 0.40),#2
+            (0.60, 0.50),#3
+            (0.60, 0.35),#4
+            (0.60, 0.55),#5
+            (0.50, 0.40),#6
+            (0.50, 0.50),#7
+            (0.50, 0.35),#8
+            (0.50, 0.55),#9
+            (0.60, 0.30),#10
+            (0.60, 0.60)#11
+            
+        ]
 
     def set_vehicle_configuration(self, vehicle):
         """Set the first-person camera location based on vehicle type."""
