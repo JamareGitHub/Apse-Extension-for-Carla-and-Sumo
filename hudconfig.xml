@@ -1,21 +1,45 @@
 <?xml version="1.0" ?>
 <Vehicles>
-    <Vehicle type_id="vehicle.audi.a2">
-        <Brightness>Moderat</Brightness>
-        <Density>Moderat</Density>
-        <Relevance>Neutral</Relevance>
-        <FoV>Medium</FoV>
-    </Vehicle>
-    <Vehicle type_id="vehicle.audi.tt">
-        <Brightness>Moderat</Brightness>
-        <Density>Moderat</Density>
-        <Relevance>Neutral</Relevance>
-        <FoV>Medium</FoV>
-    </Vehicle>
-    <Vehicle type_id="vehicle.jeep.wrangler_rubicon">
-        <Brightness>Moderat</Brightness>
-        <Density>Moderat</Density>
-        <Relevance>Neutral</Relevance>
-        <FoV>Medium</FoV>
-    </Vehicle>
+	<Vehicle type_id="vehicle.nissan.patrol">
+		<HUDName>No HUD</HUDName>
+		<Brightness>none</Brightness>
+		<Density>none</Density>
+		<Relevance>none</Relevance>
+		<FoV>none</FoV>
+	</Vehicle>
+	<Vehicle type_id="vehicle.jeep.wrangler_rubicon">
+		<Name>HUD 1</Name>
+		<Brightness>average</Brightness>
+		<Density>average</Density>
+		<Relevance>neutral</Relevance>
+		<FoV>medium</FoV>
+	</Vehicle>
+	<Vehicle type_id="vehicle.audi.tt">
+		<Name>HUD 2</Name>
+		<Brightness>average</Brightness>
+		<Density>average</Density>
+		<Relevance>neutral</Relevance>
+		<FoV>medium</FoV>
+	</Vehicle>
+	<Vehicle type_id="vehicle.chevrolet.impala">
+		<Name>HUD 3</Name>
+		<Brightness>average</Brightness>
+		<Density>average</Density>
+		<Relevance>neutral</Relevance>
+		<FoV>medium</FoV>
+	</Vehicle>
+	<Vehicle type_id="vehicle.audi.a2">
+		<Name>HUD 4</Name>
+		<Brightness>average</Brightness>
+		<Density>average</Density>
+		<Relevance>neutral</Relevance>
+		<FoV>medium</FoV>
+	</Vehicle>
+	<Vehicle type_id="vehicle.mercedes.coupe">
+		<Name>HUD 5</Name>
+		<Brightness>average</Brightness>
+		<Density>average</Density>
+		<Relevance>neutral</Relevance>
+		<FoV>medium</FoV>
+	</Vehicle>
 </Vehicles>
