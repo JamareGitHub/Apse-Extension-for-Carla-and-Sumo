@@ -7,7 +7,7 @@
 		<Relevance>none</Relevance>
 		<FoV>none</FoV>
 	</Vehicle>
-	<Vehicle type_id="vehicle.jeep.wrangler_rubicon">
+	<Vehicle type_id="vehicle.audi.a2">
 		<Name>HUD 1</Name>
 		<Brightness>average</Brightness>
 		<Density>average</Density>
@@ -21,22 +21,8 @@
 		<Relevance>neutral</Relevance>
 		<FoV>medium</FoV>
 	</Vehicle>
-	<Vehicle type_id="vehicle.chevrolet.impala">
+	<Vehicle type_id="vehicle.jeep.wrangler_rubicon">
 		<Name>HUD 3</Name>
-		<Brightness>average</Brightness>
-		<Density>average</Density>
-		<Relevance>neutral</Relevance>
-		<FoV>medium</FoV>
-	</Vehicle>
-	<Vehicle type_id="vehicle.audi.a2">
-		<Name>HUD 4</Name>
-		<Brightness>average</Brightness>
-		<Density>average</Density>
-		<Relevance>neutral</Relevance>
-		<FoV>medium</FoV>
-	</Vehicle>
-	<Vehicle type_id="vehicle.mercedes.coupe">
-		<Name>HUD 5</Name>
 		<Brightness>average</Brightness>
 		<Density>average</Density>
 		<Relevance>neutral</Relevance>
