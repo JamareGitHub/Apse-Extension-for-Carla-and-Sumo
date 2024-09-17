@@ -2,10 +2,10 @@
 <Vehicles>
     <Vehicle type_id="vehicle.audi.a2">
         <HUDName>HUD-AudiA2</HUDName>
-        <Brightness>None</Brightness>
-        <Density>None</Density>
-        <Relevance>None</Relevance>
-        <FoV>None</FoV>
+        <Brightness>dark</Brightness>
+        <Density>max</Density>
+        <Relevance>important</Relevance>
+        <FoV>small</FoV>
     </Vehicle>
     <Vehicle type_id="vehicle.seat.leon">
         <HUDName>HUD-seat.leon</HUDName>
@@ -19,14 +19,14 @@
         <Brightness>average</Brightness>
         <Density>min</Density>
         <Relevance>important</Relevance>
-        <FoV>small</FoV>
+        <FoV>medium</FoV>
     </Vehicle>
     <Vehicle type_id="vehicle.jeep.wrangler_rubicon">
         <HUDName>HUD-jeep.wrangler_rubicon</HUDName>
         <Brightness>bright</Brightness>
         <Density>min</Density>
-        <Relevance>unimportant</Relevance>
-        <FoV>small</FoV>
+        <Relevance>important</Relevance>
+        <FoV>large</FoV>
     </Vehicle>    
     <Vehicle type_id="vehicle.audi.impala">
         <HUDName>HUD-audi.impala</HUDName>
