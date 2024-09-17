@@ -74,17 +74,17 @@ def are_all_fields_valid():
             all_valid = False
         else:
             hud_frame['entry'].config(bg="white")
-
-    # Füge weitere Überprüfungen für andere notwendige Felder hinzu
-    if not map_list.curselection():
-        messagebox.showwarning("No map selected", "Please select a map for the simulation.")
-        all_valid = False
+        
     
     # Füge hier weitere spezifische Validierungslogik hinzu, falls nötig
 
     return all_valid
 
 def start_simulation():
+    if not map_list.curselection():
+        messagebox.showwarning("No map selected", "Please select a map for the simulation.")
+        return
+    
     if not are_all_fields_valid():
         print("Ein oder mehrere Felder sind ungültig.")
         messagebox.showwarning("Invalid Inputs", "Please enter valid inputs for all the input fields!")
@@ -451,6 +451,9 @@ def on_selection(event):
     # Aktualisiere alle Dropdown-Menüs
     update_comboboxes()
 
+    reselect_map() 
+
+
 
 def update_comboboxes():
     for _, dropdown, _ in objects:
@@ -462,6 +465,7 @@ def validate_integer_input(value):
     return value.isdigit() and int(value) > 0
 
 def on_validate_input(value, entry):
+    reselect_map() 
     """Callback-Funktion für die Validierung des Eingabefeldes."""
     if validate_integer_input(value):
         entry.config(bg="white")  # Setze die Hintergrundfarbe auf Weiß, wenn gültig
@@ -578,6 +582,7 @@ def create_hud_frame():
     vehicle_type_menu.grid(row=6, column=1, pady=5, padx=10, sticky='w')
 
     vehicle_type_menu.bind('<<ComboboxSelected>>', on_selection)
+    
 
     # Speichere das neue Objekt und den initialen Wert (leer)
     objects.append((label_vehicle_type, vehicle_type_menu, vehicle_type.get()))
@@ -658,6 +663,22 @@ spectate_var.set(False)  # Checkbox standardmäßig nicht angekreuzt
 hudless_var = tk.BooleanVar()
 hudless_var.set(False)
 
+
+# Funktion, um die aktuelle Auswahl zu speichern
+selected_map_index = None
+
+def on_map_select(event):
+    global selected_map_index
+    selected_index = map_list.curselection()
+    if selected_index:
+        selected_map_index = selected_index[0]
+
+def reselect_map():
+    if selected_map_index is not None:
+        map_list.selection_clear(0, tk.END)  # Alle bisherigen Auswahl entfernen
+        map_list.selection_set(selected_map_index)  # Die zuvor gespeicherte Auswahl wieder setzen
+        map_list.activate(selected_map_index)  # Fokus auf die ausgewählte Map setzen
+
 # Label für die Auswahl der Map
 map_label = tk.Label(root, text="Wähle eine Map:")
 map_label.pack(pady=10)
@@ -668,6 +689,9 @@ for map_name in maps:
     map_list.insert(tk.END, map_name)
 
 map_list.pack()
+
+# Binde das Auswahlereignis, um die Map zu speichern
+map_list.bind('<<ListboxSelect>>', on_map_select)
 
 # Checkbox für die Simulation
 simulate_checkbox = tk.Checkbutton(root, text="Co-Simulation mit Carla starten", variable=simulate_var)
