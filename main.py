@@ -179,7 +179,6 @@ def hudSelection():
             'brightness' : "none"
         }
 
-
     for hud in hud_frames:
         #probability = hud['entry'].get()
         brightness_level = hud['brightness_var'].get()
@@ -211,29 +210,6 @@ def hudSelection():
 
     return hud_data
 
-'''
-def XML_selection():
-    # Dictionary to store HUD attributes
-    xml_data = {}
-
-    for idx, hud in enumerate(hud_frames):
-        #probability = hud['entry'].get()
-        brightness_level = hud['brightness_var'].get()
-        information_density = hud['density_var'].get()
-        information_relevance = hud['relevance_var'].get()
-        fov_selection = hud['fov_var'].get()
-        vehicle_type = hud['vehicle_type'].get()
-
-        # Store the calculated values in the dictionary
-        xml_data[vehicle_type] = {
-            'Brightness' : brightness_level,
-            'Density': information_density,
-            'Relevance': information_relevance,
-            'FoV': fov_selection
-        }
-
-    return xml_data
-'''
 
 def writeXML(hud_frames):
     """
@@ -373,8 +349,13 @@ def modify_vehicle_routes(selected_map):
         vehicle_types = []
         probabilities = []
 
+        if hudless_var.get():
+            vehicle_types.append("vehicle.nissan.patrol")
+            probabilities.append(5)
+
+            
         for hud in hud_frames:
-            probability = float(hud['entry'].get())  # Wahrscheinlichkeit aus dem Eingabefeld
+            probability = int(hud['entry'].get())  # Wahrscheinlichkeit aus dem Eingabefeld
             vehicle_type = hud['vehicle_type'].get()  # Ausgewählter Fahrzeugtyp
 
             vehicle_types.append(vehicle_type)

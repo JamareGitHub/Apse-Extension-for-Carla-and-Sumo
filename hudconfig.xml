@@ -1,24 +1,4 @@
 <?xml version="1.0" ?>
 <Vehicles>
-	<Vehicle type_id="vehicle.audi.a2">
-		<HUDName>HUD 1</HUDName>
-		<Brightness>average</Brightness>
-		<Density>average</Density>
-		<Relevance>neutral</Relevance>
-		<FoV>medium</FoV>
-	</Vehicle>
-	<Vehicle type_id="vehicle.audi.tt">
-		<HUDName>HUD 2</HUDName>
-		<Brightness>average</Brightness>
-		<Density>average</Density>
-		<Relevance>neutral</Relevance>
-		<FoV>medium</FoV>
-	</Vehicle>
-	<Vehicle type_id="vehicle.jeep.wrangler_rubicon">
-		<HUDName>HUD 3</HUDName>
-		<Brightness>average</Brightness>
-		<Density>average</Density>
-		<Relevance>neutral</Relevance>
-		<FoV>medium</FoV>
-	</Vehicle>
+
 </Vehicles>
