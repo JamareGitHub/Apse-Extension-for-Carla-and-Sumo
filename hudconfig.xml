@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" ?>
 <Vehicles>
     <Vehicle type_id="vehicle.audi.a2">
         <HUDName>HUD-AudiA2</HUDName>
