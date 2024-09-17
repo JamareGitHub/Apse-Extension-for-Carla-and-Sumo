@@ -9,8 +9,6 @@ import calculations
 from tkinter import ttk
 import xml.etree.cElementTree as ET
 import xml.dom.minidom as minidom
-from dicttoxml import dicttoxml
-from xmler import dict2xml
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
 carla_base_dir = r"F:\Softwareprojekt\CARLA_0.9.15\WindowsNoEditor"
@@ -256,7 +254,7 @@ def writeXML(hud_frames):
 
         # Erstelle das XML-Element für das Fahrzeug
         vehicle_element = ET.SubElement(root, "Vehicle", type_id=vehicle_type)
-        ET.SubElement(vehicle_element, "Name").text = hud_name
+        ET.SubElement(vehicle_element, "HUDName").text = hud_name
         ET.SubElement(vehicle_element, "Brightness").text = brightness
         ET.SubElement(vehicle_element, "Density").text = density
         ET.SubElement(vehicle_element, "Relevance").text = relevance

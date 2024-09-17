@@ -54,7 +54,7 @@ class CarlaCameraClient:
 
             'icon_idea': ('idea-svgrepo-com.png'),
             'icon_minus': ('minus-svgrepo-com.png'),
-            'icon_navigation': ('navigation-svgrepo-com.png'),
+            'icon_navigation': ('navigation-svgrepo-com.png')
 
             # Add more icons as needed
         }  
@@ -126,8 +126,13 @@ class CarlaCameraClient:
             density = config.get('Density')
             relevance = config.get('Relevance')
             fov = config.get('FoV')
-            
 
+            print(brightness)
+            print(density)
+            print(relevance)
+            print(fov)
+            
+            print("---------1")
             if brightness == "very dark":
                 self.hud_alpha = 1
             elif brightness == "dark":
@@ -140,6 +145,8 @@ class CarlaCameraClient:
                 self.hud_alpha = 0.1
 
 
+            print("---------2")
+            print(fov)
             if fov == "small":
                         self.iconscale = (90,90)
                         self.icon_positions = [
@@ -149,12 +156,12 @@ class CarlaCameraClient:
                             (0.60, 0.35),#4
                             (0.60, 0.55),#5
                             (0.60, 0.30),#10
-                            (0.60, 0.60)#11
+                            (0.60, 0.60),#11
                             (0.50, 0.45),#1
                             (0.50, 0.50),#7
                             (0.50, 0.40),#6
                             (0.50, 0.55),#9
-                            (0.50, 0.35),#8
+                            (0.50, 0.35)#8
                             
                         ]
             elif fov == "medium":
@@ -191,6 +198,7 @@ class CarlaCameraClient:
                         ]
 
 
+            print("---------3")
             if relevance == "unimportant":
                 self.show_speed_text = True
                 self.show_icon_stopwatch = True
@@ -206,7 +214,7 @@ class CarlaCameraClient:
                 self.show_icon_compass = True
                 self.show_icon_minus = True
                 self.show_icon_placeholder = True
-            elif relevance == "average":
+            elif relevance == "neutral":
                 self.show_speed_text = True
                 self.show_icon_stopwatch = True
                 self.show_speed_text = True
