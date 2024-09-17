@@ -19,6 +19,7 @@ class CarlaCameraClient:
         self.current_vehicle_index = -1
         self.image_data = None
         self.exit_flag = False
+        self.hudname = 'HUD'
 
         #speed
         self.speed = 0.0  # Store the speed of the vehicle
@@ -28,6 +29,7 @@ class CarlaCameraClient:
         self.previous_location_timestamp = None  # Timestamp for previous location
         self.speed_history = deque(maxlen=100)  # Store the last 5 speed measurements for smoothing
         self.smoothing_timestamp = None
+        self.speed_hud_location = (0.60, 0.45)
 
         #camera
         self.first_person_location = [-.1, -.3, 1.3]  # Camera position
@@ -37,23 +39,38 @@ class CarlaCameraClient:
         #icons
         self.icon_path = "icons/"
         self.icons = {
-            'icon_battery': ('battery-svgrepo-com.png', (0.60, 0.3)),#höhe , breite
-            'icon_calendar': ('calendar-svgrepo-com.png', (0.60, 0.35)),
-            'icon_clock': ('clock-svgrepo-com.png', (0.50, 0.35)),
-            'icon_music_player': ('music-player-svgrepo-com.png', (0.60, 0.55)),
-            'icon_smartphone': ('smartphone-svgrepo-com.png', (0.60, 0.6)),
-            'icon_speaker': ('speaker-svgrepo-com.png', (0.50, 0.5)),
-            'icon_compass': ('compass-svgrepo-com.png', (0.50, 0.4)),
-            'icon_placeholder': ('placeholder-svgrepo-com.png', (0.50, 0.55)),
+            'icon_stopwatch': ('stopwatch-svgrepo-com.png'),
+
+            'icon_battery': ('battery-svgrepo-com.png'),#höhe , breite
+            'icon_calendar': ('calendar-svgrepo-com.png'),
+            'icon_clock': ('clock-svgrepo-com.png'),
+            'icon_music_player': ('music-player-svgrepo-com.png'),
+            'icon_smartphone': ('smartphone-svgrepo-com.png'),
+            'icon_speaker': ('speaker-svgrepo-com.png'),
+            'icon_compass': ('compass-svgrepo-com.png'),
+            'icon_placeholder': ('placeholder-svgrepo-com.png'),
 
 
-            'icon_idea': ('idea-svgrepo-com.png', (0.60, 0.4)),
-            'icon_minus': ('minus-svgrepo-com.png', (0.50, 0.45)),
-            'icon_stopwatch': ('stopwatch-svgrepo-com.png', (0.60, 0.45)),
-            'icon_navigation': ('navigation-svgrepo-com.png', (0.60, 0.5)),
+            'icon_idea': ('idea-svgrepo-com.png'),
+            'icon_minus': ('minus-svgrepo-com.png'),
+            'icon_navigation': ('navigation-svgrepo-com.png'),
 
             # Add more icons as needed
         }  
+        self.icon_positions = [
+            (0.60, 0.45),
+            (0.60, 0.5),
+            (0.60, 0.4),
+            (0.50, 0.45),
+            (0.60, 0.3),
+            (0.60, 0.35),
+            (0.50, 0.35), 
+            (0.60, 0.55),
+            (0.60, 0.6),
+            (0.50, 0.5),
+            (0.50, 0.4),
+            (0.50, 0.55)
+        ]
         self.show_speed_text = False
         self.show_icon_stopwatch = False
 
@@ -85,11 +102,13 @@ class CarlaCameraClient:
         for vehicle in root.findall('Vehicle'):
             type_id = vehicle.get('type_id')
             if type_id:
+                HUDName = vehicle.find('HUDName').text
                 brightness = vehicle.find('Brightness').text
                 density = vehicle.find('Density').text
                 relevance = vehicle.find('Relevance').text
                 fov = vehicle.find('FoV').text
                 config[type_id] = {
+                    'HUDName': HUDName,
                     'Brightness': brightness,
                     'Density': density,
                     'Relevance': relevance,
@@ -100,27 +119,28 @@ class CarlaCameraClient:
     def set_xml_config(self, vehicle):
         if vehicle.type_id in self.hud_xml_config:
             config = self.hud_xml_config[vehicle.type_id]
+            self.hudname = config.get('HUDName')
             brightness = config.get('Brightness')
             density = config.get('Density')
             relevance = config.get('Relevance')
             fov = config.get('FoV')
 
             
-            self.show_speed_text = True #always show speed if hud is active
-            self.show_icon_stopwatch = True
 
-            if brightness == "1_very_dark":
-                self.hud_alpha = 0.1
-            elif brightness == "2_dark":
-                self.hud_alpha = 0.3
-            elif brightness == "3_average":
-                self.hud_alpha = 0.5
-            elif brightness == "4_bright":
-                self.hud_alpha = 0.7
-            elif brightness == "5_very_bright":
+            if brightness == "very dark":
                 self.hud_alpha = 1
+            elif brightness == "dark":
+                self.hud_alpha = 0.7
+            elif brightness == "average":
+                self.hud_alpha = 0.5
+            elif brightness == "bright":
+                self.hud_alpha = 0.3
+            elif brightness == "very bright":
+                self.hud_alpha = 0.1
 
-            if relevance == "1_unimportant":
+            if relevance == "unimportant":
+                self.show_speed_text = True
+                self.show_icon_stopwatch = True
                 self.show_speed_text = True
                 self.show_icon_battery = True
                 self.show_icon_calendar = True
@@ -133,7 +153,9 @@ class CarlaCameraClient:
                 self.show_icon_compass = True
                 self.show_icon_minus = True
                 self.show_icon_placeholder = True
-            elif relevance == "2_average":
+            elif relevance == "average":
+                self.show_speed_text = True
+                self.show_icon_stopwatch = True
                 self.show_speed_text = True
                 self.show_icon_clock = True
                 self.show_icon_idea = True
@@ -141,7 +163,9 @@ class CarlaCameraClient:
                 self.show_icon_navigation = True
                 self.show_icon_compass = True
                 self.show_icon_minus = True
-            elif relevance == "3_important":
+            elif relevance == "important":
+                self.show_speed_text = True
+                self.show_icon_stopwatch = True
                 self.show_speed_text = True
                 self.show_icon_navigation = True
                 self.show_icon_minus = True 
@@ -176,6 +200,7 @@ class CarlaCameraClient:
         self.reset_hud()
 
     def reset_hud(self):
+        self.hudname = 'HUD'
         self.show_speed_text = False
         self.show_icon_stopwatch = False
 
@@ -294,6 +319,7 @@ class CarlaCameraClient:
 
         vehicle_name = f"Vehicle type: {self.vehicle.type_id}"  # Vehicle type text
         id_text = f"Vehicle ID: {self.vehicle.id}"  # Vehicle ID text
+        hudname_text = f"HUD Name: {self.hudname}" #HUD Name text
         font = cv2.FONT_HERSHEY_SIMPLEX  # Font for the text
 
         # Get text size for centering
@@ -301,24 +327,30 @@ class CarlaCameraClient:
         text_size_id = cv2.getTextSize(id_text, font, 1, 1)[0]
 
         # Draw text centered on the screen
-        cv2.putText(image, vehicle_name, (text_x - text_size_vehicle[0] // 2, 25), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-        cv2.putText(image, id_text, (text_x - text_size_id[0] // 2, 55), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(image, hudname_text, (text_x - text_size_vehicle[0] // 2, 25), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(image, vehicle_name, (text_x - text_size_vehicle[0] // 2, 55), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        #cv2.putText(image, id_text, (text_x - text_size_id[0] // 2, 75), font, 1, (255, 255, 255), 1, cv2.LINE_AA) car ID
         
         if self.show_speed_text:
             self.get_vehicle_speed()# Get the vehicle speed
             speed_text = f"{round(self.speed)}"  # Speed text
             text_size_speed = cv2.getTextSize(speed_text, font, 1, 1)[0]
             cv2.putText(image, speed_text, ((text_x - text_size_speed[0] // 2) -47, text_y_start + 225), font, 0.75, (0, 0, 0), 2, cv2.LINE_AA)
+            #cv2.putText(image, speed_text, self.speed_hud_location[0], self.speed_hud_location[1], font, 0.75, (0, 0, 0), 2, cv2.LINE_AA)
 
         self.add_icons(image, h, w)
 
     def add_icons(self,image, height, width):
         """Add icons to the image based on toggle states."""
-        for icon_name, (filename, rel_position) in self.icons.items():
+        poscount = 0
+        for icon_name, filename in self.icons.items():
             if getattr(self, f'show_{icon_name}', False):
+                if(icon_name == 'icon_stopwatch'):
+                    self.speed_hud_location = self.icon_positions[poscount]
                 icon = cv2.imread(os.path.join(self.icon_path, filename), cv2.IMREAD_UNCHANGED)
                 icon = cv2.resize(icon, self.iconscale)  # Resize the icon if needed
-                abs_position = (int(height * rel_position[0]), int(width * rel_position[1]))
+                abs_position = (int(height * self.icon_positions[poscount][0]), int(width * self.icon_positions[poscount][1]))
+                poscount=poscount+1
                 self.overlay_icon(image, icon, abs_position)
 
     def overlay_icon(self, image, icon, position):
