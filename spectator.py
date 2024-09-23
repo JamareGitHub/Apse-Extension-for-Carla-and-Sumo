@@ -105,13 +105,13 @@ class CarlaCameraClient:
             if type_id:
                 HUDName = vehicle.find('HUDName').text
                 brightness = vehicle.find('Brightness').text
-                density = vehicle.find('Density').text
+                frequency = vehicle.find('Frequency').text
                 relevance = vehicle.find('Relevance').text
                 fov = vehicle.find('FoV').text
                 config[type_id] = {
                     'HUDName': HUDName,
                     'Brightness': brightness,
-                    'Density': density,
+                    'Frequency': frequency,
                     'Relevance': relevance,
                     'FoV': fov
                 }
@@ -123,12 +123,12 @@ class CarlaCameraClient:
             config = self.hud_xml_config[vehicle.type_id]
             self.hudname = config.get('HUDName')
             brightness = config.get('Brightness')
-            density = config.get('Density')
+            frequency = config.get('frequency')
             relevance = config.get('Relevance')
             fov = config.get('FoV')
 
             print(brightness)
-            print(density)
+            print(frequency)
             print(relevance)
             print(fov)
             
