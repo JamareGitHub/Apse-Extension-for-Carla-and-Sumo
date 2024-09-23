@@ -21,6 +21,7 @@ class CarlaCameraClient:
         self.image_data = None
         self.exit_flag = False
         self.hudname = 'HUD'
+        self.showInfoOverlay = True
 
         # Speed-related attributes
         self.speed = 0.0  # Store the speed of the vehicle
@@ -384,8 +385,9 @@ class CarlaCameraClient:
         text_size_id = cv2.getTextSize(id_text, font, 1, 1)[0]
 
         # Draw text centered on the screen
-        cv2.putText(image, hudname_text, (text_x - text_size_vehicle[0] // 2, 25), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-        cv2.putText(image, vehicle_name, (text_x - text_size_vehicle[0] // 2, 55), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        if self.showInfoOverlay:
+            cv2.putText(image, hudname_text, (text_x - text_size_vehicle[0] // 2, 25), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.putText(image, vehicle_name, (text_x - text_size_vehicle[0] // 2, 55), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
         #cv2.putText(image, id_text, (text_x - text_size_id[0] // 2, 75), font, 1, (255, 255, 255), 1, cv2.LINE_AA) car ID
         
         if self.show_speed_text:
@@ -463,6 +465,13 @@ class CarlaCameraClient:
             if key == ord('n'):
                 print("Switching vehicle...")
                 self.switch_vehicle()
+            elif key == ord('o'):
+                print("toggle overlay")
+                print(self.showInfoOverlay)
+                if(self.showInfoOverlay):
+                    self.showInfoOverlay = False
+                else:
+                    self.showInfoOverlay = True
             elif key == ord('q'):
                 print("Exiting...")
                 self.exit_flag = True
