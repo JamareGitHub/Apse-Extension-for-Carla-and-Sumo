@@ -196,6 +196,7 @@ def start_simulation():
                 print("Starte Synchronisationsskript mit SUMO: {}".format(selected_sumocfg))
                 sync_command = ["python", sync_script, selected_sumocfg, "--sumo-gui", "--sync-vehicle-color"]
                 subprocess.Popen(sync_command, cwd=os.path.dirname(sync_script))
+                run_simulation()
 
             except FileNotFoundError as e:
                 print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
