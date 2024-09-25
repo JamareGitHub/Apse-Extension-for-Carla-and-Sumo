@@ -31,11 +31,11 @@ class CarlaCameraClient:
         self.previous_location_timestamp = None  # Timestamp for previous location
         self.speed_history = deque(maxlen=100)  # Store the last 100 speed measurements for smoothing
         self.smoothing_timestamp = None
-        self.speed_hud_location = (0.60, 0.45)
-        self.speed_number_offset = (33,84,0.6)
+        self.speed_hud_location = (0.0, 0.0)
+        self.speed_number_offset = (0.0,0.0)
 
         # Camera configuration
-        self.first_person_location = [-.1, -.3, 1.3]  # Camera position
+        self.first_person_location = [0.0, 0.0, 0.0]  # Camera position
         self.image_resolution_x = '1920'
         self.image_resolution_y = '1080'
 
@@ -62,17 +62,17 @@ class CarlaCameraClient:
             # Add more icons as needed
         }  
         self.icon_positions = [
-            (0.40, 0.45),#1
-            (0.60, 0.35),#2
-            (0.60, 0.55),#3
-            (0.60, 0.25),#4
-            (0.60, 0.65),#5
-            (0.40, 0.35),#6
-            (0.40, 0.55),#7
-            (0.40, 0.25),#8
-            (0.40, 0.65),#9
-            (0.60, 0.15),#10
-            (0.60, 0.75)#11
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (0.0, 0.0)
             
         ]
         self.show_speed_text = False
@@ -220,6 +220,7 @@ class CarlaCameraClient:
                 self.show_icon_minus = True
                 self.show_icon_battery = True
             elif relevance == "important":
+                self.show_icon_stopwatch = True
                 self.show_speed_text = True
                 self.show_icon_navigation = True
                 self.show_icon_minus = True 
@@ -247,10 +248,11 @@ class CarlaCameraClient:
         self.previous_location_timestamp = None
         self.speed_history.clear()
         self.smoothing_timestamp = None
+        self.first_person_location = [0.0, 0.0, 0.0]
         self.reset_hud()
 
     def reset_hud(self):
-        self.hudname = 'HUD'
+        self.hudname = ''
         self.show_speed_text = False
         self.show_icon_stopwatch = False
         self.show_icon_battery = False
@@ -267,6 +269,9 @@ class CarlaCameraClient:
         self.hud_alpha = 1
         self.iconscale = (90,90)     
         self.icon_positions = []
+        self.hud_area_start = (0.00, 0,00)
+        self.speed_hud_location = (0.0, 0.0)
+        self.speed_number_offset = (0.0,0.0)
 
     def set_vehicle_configuration(self, vehicle):
         """Set the first-person camera location based on vehicle type."""
