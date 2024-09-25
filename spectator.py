@@ -151,7 +151,7 @@ class CarlaCameraClient:
                 self.iconscale = (60,60)
                 self.speed_number_offset = (20,55,0.45)
                 self.icon_positions = [
-                    (x,y+.04),
+                    (x,y+.05),
                     (x,y+.15),
                     (x-.06,y+.1),
                     (x-.06,y+.05),
