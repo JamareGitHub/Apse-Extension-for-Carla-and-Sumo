@@ -13,9 +13,9 @@ from PIL import Image, ImageTk
 import traci
 import csv
 
+import config
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
-import config
 carla_base_dir = config.carla_base_dir
 config_script = os.path.join(carla_base_dir, "PythonAPI", "util", "config.py")
 
@@ -106,9 +106,9 @@ def update_vehicle_min_gap(vehicle_id, new_min_gap):
     # Setze den neuen Minimalabstand für das Fahrzeug
     traci.vehicle.setMinGap(vehicle_id, new_min_gap)
 
-
+#TODO:
 def run_simulation():
-    traci.start(["sumo", "-c", r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor\Co-Simulation\Sumo\examples\Town01.sumocfg"])
+    traci.start(["sumo", "-c", config.tracipath])
     
     simulation_data = []  # Liste zur Speicherung der Simulationsdaten
 
