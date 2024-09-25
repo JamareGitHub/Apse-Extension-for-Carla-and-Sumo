@@ -1,6 +1,8 @@
 # Apse-Extension-for-Carla-and-Sumo
 
 ## Requirements
+* Python 3.10 or higher
+* 
 
 * Separate Sumo Installation
 * Separate Carla Installation (If 3D Word view / First-Person Spectator requested)
