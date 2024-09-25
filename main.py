@@ -84,17 +84,6 @@ def are_all_fields_valid():
 
     return all_valid
 
-def update_vehicle_min_gap(vehicle_id, new_min_gap):
-    """
-    Aktualisiert den Minimalabstand eines Fahrzeugs während der Simulation.
-    
-    :param vehicle_id: ID des Fahrzeugs, dessen MinGap geändert werden soll.
-    :param new_min_gap: Neuer Minimalabstand, der gesetzt werden soll.
-    """
-    # Setze den neuen Minimalabstand für das Fahrzeug
-    traci.vehicle.setMinGap(vehicle_id, new_min_gap)
-
-
 def run_simulation():
     traci.start(["sumo", "-c", r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor\Co-Simulation\Sumo\examples\Town01.sumocfg"])
     
@@ -223,14 +212,13 @@ def start_simulation():
                 sync_script = os.path.join(sumo_base_dir, "run_synchronization.py")
                 print("Starte Synchronisationsskript mit SUMO: {}".format(selected_sumocfg))
                 sync_command = ["sumo-gui", "-c", selected_sumocfg, "--start", "--tripinfo-output", "tripinfo.xml"]
-                syncprocess = subprocess.Popen(sync_command, cwd=os.path.dirname(sync_script))
+                subprocess.Popen(sync_command, cwd=os.path.dirname(sync_script))
 
             except FileNotFoundError as e:
                 print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
         else:
             start_sumo(selected_sumocfg)
             run_simulation()
-
 
 
         if spectate_var.get():
@@ -646,7 +634,6 @@ def create_hud_frame():
 
     vehicle_type_menu.bind('<<ComboboxSelected>>', on_selection)
     
-
     # Speichere das neue Objekt und den initialen Wert (leer)
     objects.append((label_vehicle_type, vehicle_type_menu, vehicle_type.get()))
 
