@@ -10,6 +10,9 @@ from tkinter import ttk
 import xml.etree.cElementTree as ET
 import xml.dom.minidom as minidom
 from PIL import Image, ImageTk
+import traci
+import csv
+
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
 #carla_base_dir = r"F:\Softwareprojekt\CARLA_0.9.15\WindowsNoEditor"
@@ -28,7 +31,7 @@ maps = {
 
 # Dropdown-Optionen und Farben definieren
 brightness_level = ["very dark", "dark", "average", "bright", "very bright"]
-information_density = ["minimum", "average", "maximum"]
+information_frequency = ["minimum", "average", "maximum"]
 information_relevance = ["unimportant", "neutral", "important"]
 fov = ["small", "medium", "large"]
 
@@ -56,12 +59,24 @@ base_frame = {
         'header': "header_entry",
         'entry': 0.5,
         'brightness_var': "none",
-        'density_var': "none",
+        'frequency_var': "none",
         'relevance_var': "none",
         'fov_var': "none",
         'vehicle_type': "",
         'hud_id': 999  # Eindeutige ID für das HUD
     }
+
+
+def save_simulation_data(data, filename="simulation_data.csv"):
+    """Speichert Simulationsdaten in einer CSV-Datei."""
+    with open(filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        # Schreibe die Header-Zeile
+        writer.writerow(["vehicle_id", "current_speed", "current_min_gap", "position_x", "position_y"])
+
+        # Schreibe die Daten für jedes Fahrzeug
+        for row in data:
+            writer.writerow(row)
 
 def are_all_fields_valid():
     """Überprüft, ob alle Eingabefelder korrekt ausgefüllt sind."""
@@ -81,15 +96,54 @@ def are_all_fields_valid():
 
     return all_valid
 
+def update_vehicle_min_gap(vehicle_id, new_min_gap):
+    """
+    Aktualisiert den Minimalabstand eines Fahrzeugs während der Simulation.
+    
+    :param vehicle_id: ID des Fahrzeugs, dessen MinGap geändert werden soll.
+    :param new_min_gap: Neuer Minimalabstand, der gesetzt werden soll.
+    """
+    # Setze den neuen Minimalabstand für das Fahrzeug
+    traci.vehicle.setMinGap(vehicle_id, new_min_gap)
+
+
+def run_simulation():
+    traci.start(["sumo", "-c", r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor\Co-Simulation\Sumo\examples\Town01.sumocfg"])
+    
+    simulation_data = []  # Liste zur Speicherung der Simulationsdaten
+
+    while traci.simulation.getMinExpectedNumber() > 0:
+        traci.simulationStep()  # Simulationsschritt durchführen
+
+        for vehicle_id in traci.vehicle.getIDList():
+            current_min_gap = traci.vehicle.getMinGap(vehicle_id)
+            current_speed = traci.vehicle.getSpeed(vehicle_id)
+            position = traci.vehicle.getPosition(vehicle_id)  # Hole die Position des Fahrzeugs
+            
+            # Speichere die Daten in der Liste
+            simulation_data.append([vehicle_id, current_speed, current_min_gap, position[0], position[1]])
+            
+            new_min_gap = max(1.0, current_speed * 0.5)  # Beispielwert
+            traci.vehicle.setMinGap(vehicle_id, new_min_gap)
+            #print(f"Updated minGap for {vehicle_id} from {current_min_gap} to {new_min_gap}")
+
+    traci.close()
+
+    # Speichere die gesammelten Simulationsdaten in eine CSV-Datei
+    save_simulation_data(simulation_data)
+
+
 def start_simulation():
     if not map_list.curselection():
         messagebox.showwarning("No map selected", "Please select a map for the simulation.")
         return
     
     if not are_all_fields_valid():
-        print("Ein oder mehrere Felder sind ungültig.")
         messagebox.showwarning("Invalid Inputs", "Please enter valid inputs for all the input fields!")
         return
+    
+    if hudless_var.get() == False and len(hud_frames) == 0:
+        messagebox.showwarning("No simulation data", "Please allow simulation without HUD or create HUDs to simulate.")
 
     selected_index = map_list.curselection()
 
@@ -98,13 +152,13 @@ def start_simulation():
     global hud_count
 
     hud_data = hudSelection()
-    # xml_data = XML_selection()
         
     print("Gespeicherte HUD-Daten:")
     for vehicle_type in hud_data.items():
-       print(f"{vehicle_type}")
+        print(f"{vehicle_type}")
 
-    update_max_speeds(carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml", hud_data)
+    # Update der maximalen Geschwindigkeiten
+    update_max_speeds(carla_base_dir + r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml", hud_data)
 
     if hudless_var.get():
         print("BASE CAR EXISTS!")
@@ -140,14 +194,16 @@ def start_simulation():
                 # Führe das Synchronisationsskript aus
                 sync_script = os.path.join(sumo_base_dir, "run_synchronization.py")
                 print("Starte Synchronisationsskript mit SUMO: {}".format(selected_sumocfg))
-                sync_command = ["python", sync_script, selected_sumocfg, "--sumo-gui", "--sync-vehicle-color"]
+                sync_command = ["sumo-gui", "-c", selected_sumocfg, "--start", "--tripinfo-output", "tripinfo.xml"]
                 syncprocess = subprocess.Popen(sync_command, cwd=os.path.dirname(sync_script))
 
             except FileNotFoundError as e:
                 print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
         else:
             start_sumo(selected_sumocfg)
-            print("Simulation nicht gestartet, da die Checkbox nicht angekreuzt ist.")
+            run_simulation()
+
+
 
         if spectate_var.get():
             try:
@@ -156,10 +212,8 @@ def start_simulation():
                 spectatordir = os.path.dirname(spectatorpath)
                 subprocess.Popen(["python", spectatorpath, spectatordir])
                 print("started spectator")
-            
             except FileNotFoundError as e:
                 print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
-            
 
 def hudSelection():
     experience_level = 5
@@ -177,25 +231,23 @@ def hudSelection():
             "min_Gap": 5,
             'vehicle_type': "vehicle.nissan.patrol",
             'speed_factor': 1,
-            'brightness' : "none"
+            'brightness': "none"
         }
 
     for hud in hud_frames:
-        #probability = hud['entry'].get()
         brightness_level = hud['brightness_var'].get()
-        information_density = hud['density_var'].get()
+        information_frequency = hud['frequency_var'].get()
         information_relevance = hud['relevance_var'].get()
         fov_selection = hud['fov_var'].get()
         vehicle_type = hud['vehicle_type'].get()
 
-        distraction_level = calculations.calc_distraction(information_relevance, fov_selection, information_density, brightness_level)
-        fatigueness_level = calculations.calc_fatigueness(information_relevance, fov_selection, information_density)
-        awareness_level = calculations.calc_awareness(fov_selection, information_relevance, information_density, distraction_level, fatigueness_level)
+        distraction_level = calculations.calc_distraction(information_relevance, fov_selection, information_frequency, brightness_level)
+        fatigueness_level = calculations.calc_fatigueness(information_relevance, fov_selection, information_frequency)
+        awareness_level = calculations.calc_awareness(fov_selection, information_relevance, information_frequency, distraction_level, fatigueness_level)
         reactTime = calculations.calc_ReactTime(distraction_level, fatigueness_level, experience_level, awareness_level, age)
         maxSpeed = calculations.calc_MaxSpeed(experience_level, awareness_level)
         minGap = calculations.calc_MinGap(distraction_level, fatigueness_level, experience_level, awareness_level)
-        speedFactor = calculations.calc_SpeedAd(information_density, fov_selection, distraction_level, fatigueness_level, experience_level, awareness_level)
-
+        speedFactor = calculations.calc_SpeedAd(information_frequency, fov_selection, distraction_level, fatigueness_level, experience_level, awareness_level)
 
         # Store the calculated values in the dictionary
         hud_data[vehicle_type] = {
@@ -206,56 +258,45 @@ def hudSelection():
             "min_Gap": minGap,
             'vehicle_type': vehicle_type,
             'speed_factor': speedFactor,
-            'brightness' : brightness_level
+            'brightness': brightness_level
         }
 
     return hud_data
 
 
 def writeXML(hud_frames):
-    """
-    Diese Funktion extrahiert die Daten aus den hud_frames und speichert sie in einer XML-Datei.
-    :param hud_frames: Liste von Frames, die die HUD-Eingabewerte der Fahrzeuge enthält.
-    """
     root = ET.Element("Vehicles")
 
     if hudless_var.get():
         vehicle_type = "vehicle.nissan.patrol"
         brightness = "none"
-        density = "none"
+        frequency = "none"
         relevance = "none"
         fov = "none"
         hud_name = "No HUD"
 
-        # Erstelle das XML-Element für das Fahrzeug
         vehicle_element = ET.SubElement(root, "Vehicle", type_id=vehicle_type)
         ET.SubElement(vehicle_element, "HUDName").text = hud_name
         ET.SubElement(vehicle_element, "Brightness").text = brightness
-        ET.SubElement(vehicle_element, "Density").text = density
+        ET.SubElement(vehicle_element, "Frequency").text = frequency
         ET.SubElement(vehicle_element, "Relevance").text = relevance
         ET.SubElement(vehicle_element, "FoV").text = fov
         
-    
-    # Iteriere durch die HUD-Frames und hole die Werte
     for hud in hud_frames:
-        print("Test")
-        vehicle_type = hud['vehicle_type'].get()  # Fahrzeugtyp aus dem Entry-Widget
-        brightness = hud['brightness_var'].get()  # Helligkeit aus dem Entry-Widget
-        density = hud['density_var'].get()  # Dichte aus dem Entry-Widget
-        relevance = hud['relevance_var'].get()  # Relevanz aus dem Entry-Widget
-        fov = hud['fov_var'].get()  # Sichtfeld aus dem Entry-Widget
-        hud_name = hud['header'].get()  # Holt den aktuellen Text
+        vehicle_type = hud['vehicle_type'].get()
+        brightness = hud['brightness_var'].get()
+        frequency = hud['frequency_var'].get()
+        relevance = hud['relevance_var'].get()
+        fov = hud['fov_var'].get()
+        hud_name = hud['header'].get()
 
-
-        # Erstelle das XML-Element für das Fahrzeug
         vehicle_element = ET.SubElement(root, "Vehicle", type_id=vehicle_type)
         ET.SubElement(vehicle_element, "HUDName").text = hud_name
         ET.SubElement(vehicle_element, "Brightness").text = brightness
-        ET.SubElement(vehicle_element, "Density").text = density
+        ET.SubElement(vehicle_element, "Frequency").text = frequency
         ET.SubElement(vehicle_element, "Relevance").text = relevance
         ET.SubElement(vehicle_element, "FoV").text = fov
 
-    
     # In eine XML-Datei schreiben
     tree = ET.ElementTree(root)
     xml_file_path = "hudconfig.xml"
@@ -271,57 +312,44 @@ def writeXML(hud_frames):
 
 
 def update_max_speeds(xml_file_path, hud_data):
-    # Parse the XML file
     tree = ET.parse(xml_file_path)
     root = tree.getroot()
 
-    # Update maxSpeed, minGapLat, speedFactor, and add driverstate params for each HUD in hud_data
     for vehicle_type, data in hud_data.items():
         max_speed = data['max_speed']
-        minGap = data.get('min_Gap', '')  # Assuming 'min_Gap' might not always be present
-        speedFactor = data.get('speed_factor', '')  # Assuming 'speed_factor' might not always be present
+        minGap = data.get('min_Gap', '')
+        speedFactor = data.get('speed_factor', '')
         reactionTime = data.get('reactTime')
 
-        # Find the vType element with the specified hud_id
-        
         for vtype_elem in root.findall('vType'):
             vtype_id = vtype_elem.get('id')
 
-            # Check if the vType id matches the current vehicle_type
             if vtype_id == vehicle_type:
-                # Update the maxSpeed, minGapLat, speedFactor attributes
                 vtype_elem.set('maxSpeed', str(max_speed))
                 vtype_elem.set('minGap', str(minGap))
                 vtype_elem.set('speedFactor', str(speedFactor))
 
-                # Check if driverstate params already exist, and update or create accordingly
                 driverstate_params = vtype_elem.findall("./param[@key='has.driverstate.device']")
                 if driverstate_params:
-                    # Update existing param
                     driverstate_params[0].set('value', 'true')
                 else:
-                    # Create new param
                     driverstate_param1 = ET.SubElement(vtype_elem, 'param')
                     driverstate_param1.set('key', 'has.driverstate.device')
                     driverstate_param1.set('value', 'true')
 
-                # Check and update or create maximalReactionTime param
                 reaction_time_params = vtype_elem.findall("./param[@key='maximalReactionTime']")
                 if reaction_time_params:
-                    # Update existing param
                     reaction_time_params[0].set('value', str(reactionTime))
                 else:
-                    # Create new param
                     driverstate_param2 = ET.SubElement(vtype_elem, 'param')
                     driverstate_param2.set('key', 'maximalReactionTime')
                     driverstate_param2.set('value', str(reactionTime))
 
-                # Set random color (RGB)
                 color = "#{:02x}{:02x}{:02x}".format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
                 vtype_elem.set('color', color)
 
-    # Write the updated XML back to the file
     tree.write(xml_file_path, encoding='utf-8', xml_declaration=True)
+
 
 def prettify(elem):
     rough_string = ET.tostring(elem, 'utf-8')
@@ -526,20 +554,20 @@ def create_hud_frame():
     brightness_question_button.bind("<Leave>", lambda event, tooltip=brightness_tooltip: tooltip.hide_tooltip())
 
     # Informationsdichte auswählen
-    label_density = tk.Label(frame, text="Informationsdichte für HUD auswählen:", bg="white")
-    label_density.grid(row=3, column=0, pady=5, padx=10, sticky='w')
+    label_frequency = tk.Label(frame, text="Informationsdichte für HUD auswählen:", bg="white")
+    label_frequency.grid(row=3, column=0, pady=5, padx=10, sticky='w')
     
-    density_var = tk.StringVar(frame)
-    density_var.set(information_density[1])
-    density_menu = tk.OptionMenu(frame, density_var, *information_density)
-    density_menu.grid(row=3, column=1, pady=5, padx=10, sticky='w')
+    frequency_var = tk.StringVar(frame)
+    frequency_var.set(information_frequency[1])
+    frequency_menu = tk.OptionMenu(frame, frequency_var, *information_frequency)
+    frequency_menu.grid(row=3, column=1, pady=5, padx=10, sticky='w')
 
-    density_tooltip = ToolTip(density_menu, "Informationsdichte des HUDs.")
+    frequency_tooltip = ToolTip(frequency_menu, "Informationsdichte des HUDs.")
     
-    density_question_button = tk.Button(frame, text="?", command=density_tooltip.show_tooltip, width=3)
-    density_question_button.grid(row=3, column=2, padx=5)
-    density_question_button.bind("<Enter>", lambda event, tooltip=density_tooltip: tooltip.show_tooltip())
-    density_question_button.bind("<Leave>", lambda event, tooltip=density_tooltip: tooltip.hide_tooltip())
+    frequency_question_button = tk.Button(frame, text="?", command=frequency_tooltip.show_tooltip, width=3)
+    frequency_question_button.grid(row=3, column=2, padx=5)
+    frequency_question_button.bind("<Enter>", lambda event, tooltip=frequency_tooltip: tooltip.show_tooltip())
+    frequency_question_button.bind("<Leave>", lambda event, tooltip=frequency_tooltip: tooltip.hide_tooltip())
 
     # Informationsrelevanz auswählen
     label_relevance = tk.Label(frame, text="Informationsrelevanz für HUD auswählen:", bg="white")
@@ -594,7 +622,7 @@ def create_hud_frame():
         'header': header_entry,
         'entry': probability_entry,
         'brightness_var': brightness_var,
-        'density_var': density_var,
+        'frequency_var': frequency_var,
         'relevance_var': relevance_var,
         'fov_var': fov_var,
         'vehicle_type': vehicle_type,
