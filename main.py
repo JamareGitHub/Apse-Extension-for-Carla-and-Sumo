@@ -15,8 +15,8 @@ import csv
 
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
-#carla_base_dir = r"F:\Softwareprojekt\CARLA_0.9.15\WindowsNoEditor"
-carla_base_dir = r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor"
+import config
+carla_base_dir = config.carla_base_dir
 config_script = os.path.join(carla_base_dir, "PythonAPI", "util", "config.py")
 
 # Basisverzeichnis für SUMO
