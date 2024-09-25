@@ -32,6 +32,7 @@ class CarlaCameraClient:
         self.speed_history = deque(maxlen=100)  # Store the last 100 speed measurements for smoothing
         self.smoothing_timestamp = None
         self.speed_hud_location = (0.60, 0.45)
+        self.speed_number_offset = (33,84,0.6)
 
         # Camera configuration
         self.first_person_location = [-.1, -.3, 1.3]  # Camera position
@@ -39,6 +40,7 @@ class CarlaCameraClient:
         self.image_resolution_y = '1080'
 
         # HUD icons configuration
+        self.hud_area_start = (0.00, 0,00)
         self.icon_path = "icons/"
         self.icons = {
             'icon_stopwatch': ('stopwatch-svgrepo-com.png'),
@@ -126,7 +128,8 @@ class CarlaCameraClient:
             frequency = config.get('frequency')
             relevance = config.get('Relevance')
             fov = config.get('FoV')
-
+            x = self.hud_area_start[0]
+            y = self.hud_area_start[1]
             print(brightness)
             print(frequency)
             print(relevance)
@@ -142,56 +145,56 @@ class CarlaCameraClient:
                 self.hud_alpha = 0.3
             elif brightness == "very bright":
                 self.hud_alpha = 0.1
-
-
-            print(fov)
+            
             if fov == "small":
-                        self.iconscale = (90,90)
-                        self.icon_positions = [
-                            (0.60, 0.40),#2
-                            (0.60, 0.50),#3
-                            (0.60, 0.35),#4
-                            (0.60, 0.55),#5
-                            (0.60, 0.30),#10
-                            (0.60, 0.60),#11
-                            (0.50, 0.45),#1
-                            (0.50, 0.50),#7
-                            (0.50, 0.40),#6
-                            (0.50, 0.55),#9
-                            (0.50, 0.35)#8
-                            
-                        ]
+                self.speed_hud_location = (x,y+.1)
+                self.iconscale = (60,60)
+                self.speed_number_offset = (20,55,0.45)
+                self.icon_positions = [
+                    (x,y+.04),
+                    (x,y+.15),
+                    (x-.06,y+.1),
+                    (x-.06,y+.05),
+                    (x-.06,y+.15),
+                    (x,y+.2),
+                    (x-.06,y+.2),
+                    (x,y),
+                    (x-.06,y),
+                    (x,y+.25),
+                    (x-.06,y+.25)
+                ]
             elif fov == "medium":
-                        self.iconscale = (90,90)
-                        self.icon_positions = [
-                            (0.50, 0.45),#1
-                            (0.60, 0.40),#2
-                            (0.60, 0.50),#3
-                            (0.60, 0.35),#4
-                            (0.60, 0.55),#5
-                            (0.50, 0.40),#6
-                            (0.50, 0.50),#7
-                            (0.50, 0.35),#8
-                            (0.50, 0.55),#9
-                            (0.60, 0.30),#10
-                            (0.60, 0.60)#11
-                        ]
+                self.speed_hud_location = (x,y+.1)
+                self.speed_number_offset = (33,84,.6)
+                self.icon_positions = [
+                    (x,y+.05),
+                    (x,y+.15),
+                    (x-.1,y+.1),
+                    (x-.1,y+.05),
+                    (x-.1,y+.15),
+                    (x,y+.2),
+                    (x-.1,y+.2),
+                    (x,y),
+                    (x-.1,y),
+                    (x,y+.25),
+                    (x-.1,y+.25)
+                ]
             elif fov == "large":
-                        self.iconscale = (90,90)
-                        self.icon_positions = [
-                            (0.40, 0.45),#1
-                            (0.60, 0.35),#2
-                            (0.60, 0.55),#3
-                            (0.60, 0.25),#4
-                            (0.60, 0.65),#5
-                            (0.40, 0.35),#6
-                            (0.40, 0.55),#7
-                            (0.40, 0.25),#8
-                            (0.40, 0.65),#9
-                            (0.60, 0.15),#10
-                            (0.60, 0.75)#11
-                        ]
-
+                self.speed_hud_location = (x-.05,y+.2)
+                self.speed_number_offset = (33,84,.6)
+                self.icon_positions = [
+                    (x-.05,y+.1),
+                    (x-.05,y+.3),
+                    (x-.2,y+.2),
+                    (x-.2,y+.1),
+                    (x-.2,y+.3),
+                    (x-.05,y+.4),
+                    (x-.2,y+.4),
+                    (x-.05,y),
+                    (x-.2,y),
+                    (x-.05,y+.5),
+                    (x-.2,y+.5)
+                ]
 
             if relevance == "unimportant":
                 self.show_speed_text = True
@@ -217,10 +220,11 @@ class CarlaCameraClient:
                 self.show_icon_minus = True
                 self.show_icon_battery = True
             elif relevance == "important":
-                self.speed_hud_location = (40,45)
                 self.show_speed_text = True
                 self.show_icon_navigation = True
                 self.show_icon_minus = True 
+
+
         else:
             self.reset_hud()
 
@@ -261,55 +265,55 @@ class CarlaCameraClient:
         self.show_icon_minus = False
         self.show_icon_placeholder = False
         self.hud_alpha = 1
-        self.iconscale = (90,90)        
-        self.icon_positions = [
-            (0.60, 0.45),#0
-            (0.50, 0.45),#1
-            (0.60, 0.40),#2
-            (0.60, 0.50),#3
-            (0.60, 0.35),#4
-            (0.60, 0.55),#5
-            (0.50, 0.40),#6
-            (0.50, 0.50),#7
-            (0.50, 0.35),#8
-            (0.50, 0.55),#9
-            (0.60, 0.30),#10
-            (0.60, 0.60)#11
-            
-        ]
+        self.iconscale = (90,90)     
+        self.icon_positions = []
 
     def set_vehicle_configuration(self, vehicle):
         """Set the first-person camera location based on vehicle type."""
         vehicle_name = vehicle.type_id
         if vehicle_name == "vehicle.audi.a2":
             self.first_person_location = [0.2, -0.3, 1.3]
+            self.hud_area_start = (0.58,0.32)#(lower=higher,lower=lefter)
         elif vehicle_name == "vehicle.audi.tt":
             self.first_person_location = [0, -.3, 1.25]
+            self.hud_area_start = (0.6,0.24)
         elif vehicle_name == "vehicle.jeep.wrangler_rubicon":
             self.first_person_location = [-0.3, -0.3, 1.5]
+            self.hud_area_start = (0.58,0.32)
         elif vehicle_name == "vehicle.chevrolet.impala":
             self.first_person_location = [0.1, -0.3, 1.2]
+            self.hud_area_start = (0.57,0.29)
         elif vehicle_name == "vehicle.mini.cooper_s":
             self.first_person_location = [-.1, -0.35, 1.2]
+            self.hud_area_start = (0.53,0.23)
         elif vehicle_name == "vehicle.mercedes.coupe":
             self.first_person_location = [-.1, -0.3, 1.25]
+            self.hud_area_start = (0.52,0.28)
         elif vehicle_name == "vehicle.bmw.grandtourer":
             self.first_person_location = [0, -.3, 1.35]
+            self.hud_area_start = (0.55,0.22)
         elif vehicle_name == "vehicle.citroen.c3":
             self.first_person_location = [-.1, -0.3, 1.3]
+            self.hud_area_start = (0.53,0.32)
         elif vehicle_name == "vehicle.ford.mustang":
             self.first_person_location = [-.2, -0.3, 1.1]
+            self.hud_area_start = (0.52,0.1)
         elif vehicle_name == "vehicle.volkswagen.t2":
-            self.first_person_location = [1, -0.35, 1.65]
+            self.first_person_location = [1, -0.3, 1.65]
+            self.hud_area_start = (0.58,0.23)
         elif vehicle_name == "vehicle.lincoln.mkz_2017":
             self.first_person_location = [0, -0.3, 1.3]
+            self.hud_area_start = (0.58,0.28)
         elif vehicle_name == "vehicle.seat.leon":
             self.first_person_location = [0.1, -0.3, 1.3]
+            self.hud_area_start = (0.65,0.25)
         elif vehicle_name == "vehicle.nissan.patrol":
             self.first_person_location = [-.1, -0.3, 1.5]
+            self.hud_area_start = (0.58,0.32)
         else:
             print("Vehicle type not found, using default camera position")
             self.first_person_location = [-.1, -0.3, 1.3]
+            self.hud_area_start = (0.58,0.32)
 
     def attach_camera_to_vehicle(self, vehicle):
         """Attach a camera to a given vehicle."""
@@ -368,50 +372,58 @@ class CarlaCameraClient:
                 self.previous_location_timestamp = self.current_location_timestamp
 
     def add_hud(self, image):
-        """Add the speed HUD to the image."""
-        h, w, _ = image.shape  # Get the height and width of the input image
+        height,width,_ = image.shape#window size
 
-        # Calculate positions for the text and icons
-        text_x = w // 2  # Center the text horizontally
-        text_y_start = h // 2 - 30  # Center the text vertically, starting above the center
-        
-        vehicle_name = f"Vehicle type: {self.vehicle.type_id}"  # Vehicle type text
-        id_text = f"Vehicle ID: {self.vehicle.id}"  # Vehicle ID text
-        hudname_text = f"HUD Name: {self.hudname}" #HUD Name text
-        font = cv2.FONT_HERSHEY_SIMPLEX  # Font for the text
-
-        # Get text size for centering
-        text_size_vehicle = cv2.getTextSize(vehicle_name, font, 1, 1)[0]
-        text_size_id = cv2.getTextSize(id_text, font, 1, 1)[0]
-
-        # Draw text centered on the screen
-        if self.showInfoOverlay:
-            cv2.putText(image, hudname_text, (text_x - text_size_vehicle[0] // 2, 25), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-            cv2.putText(image, vehicle_name, (text_x - text_size_vehicle[0] // 2, 55), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-        #cv2.putText(image, id_text, (text_x - text_size_id[0] // 2, 75), font, 1, (255, 255, 255), 1, cv2.LINE_AA) car ID
-        
-        if self.show_speed_text:
-            self.get_vehicle_speed()# Get the vehicle speed
-            speed_text = f"{round(self.speed)}"  # Speed text
-            text_size_speed = cv2.getTextSize(speed_text, font, 1, 1)[0]
-            cv2.putText(image, speed_text, ((text_x - text_size_speed[0] // 2) -47, text_y_start + 225), font, 0.75, (0, 0, 0), 2, cv2.LINE_AA)
-            #cv2.putText(image, speed_text, self.speed_hud_location[0], self.speed_hud_location[1], font, 0.75, (0, 0, 0), 2, cv2.LINE_AA)
-
-        self.add_icons(image, h, w)
-
-    def add_icons(self,image, height, width):
-        """Add icons to the image based on toggle states."""
+        """icon loop to show all icons on screen"""
         poscount = 0
         for icon_name, filename in self.icons.items():
             if getattr(self, f'show_{icon_name}', False):
                 icon = cv2.imread(os.path.join(self.icon_path, filename), cv2.IMREAD_UNCHANGED)
                 icon = cv2.resize(icon, self.iconscale)  # Resize the icon if needed
-                if(icon_name == 'icon_stopwatch'):
+                if(icon_name == 'icon_stopwatch'):#use special settings for speedometer
                     abs_position = (int(height * self.speed_hud_location[0]), int(width * self.speed_hud_location[1]))
-                else:
+                else:#all other icons
                     abs_position = (int(height * self.icon_positions[poscount][0]), int(width * self.icon_positions[poscount][1]))
                     poscount=poscount+1
                 self.overlay_icon(image, icon, abs_position)
+        
+        #text (speedometer number)
+                
+        # font
+        font = cv2.FONT_HERSHEY_SIMPLEX
+
+        # org pos on screen
+        org = (int(width * self.speed_hud_location[1]+self.speed_number_offset[0]), int(height * self.speed_hud_location[0]+self.speed_number_offset[1]))
+
+        # fontScale
+        fontScale = self.speed_number_offset[2]
+        
+        # color
+        color = (0, 0, 0)
+
+        # Line thickness of 2 px
+        thickness = 1
+
+        self.get_vehicle_speed()# Get the vehicle speed
+        speed_text = f"{round(self.speed)}"  # Speed text
+ 
+        # Using cv2.putText() method
+        image = cv2.putText(image, speed_text, org, font, 
+                        fontScale, color, thickness, cv2.LINE_AA)
+
+        
+        vehicle_name = f"Vehicle type: {self.vehicle.type_id}"  # Vehicle type text
+        hudname_text = f"HUD Name: {self.hudname}" #HUD Name text
+        font = cv2.FONT_HERSHEY_SIMPLEX  # Font for the text
+
+
+        # Get text size for centering
+        text_size_vehicle = cv2.getTextSize(vehicle_name, font, 1, 1)[0]
+
+        # Draw text centered on the screen
+        if self.showInfoOverlay:
+            cv2.putText(image, hudname_text, (width//2 - text_size_vehicle[0] // 2, 25), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.putText(image, vehicle_name, (width//2 - text_size_vehicle[0] // 2, 55), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
 
     def overlay_icon(self, image, icon, position):
         """Overlay the icon onto the image at the given position."""
