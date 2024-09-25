@@ -32,7 +32,7 @@ class CarlaCameraClient:
         self.speed_history = deque(maxlen=100)  # Store the last 100 speed measurements for smoothing
         self.smoothing_timestamp = None
         self.speed_hud_location = (0.0, 0.0)
-        self.speed_number_offset = (0.0,0.0)
+        self.speed_number_offset = (0,0,0)
 
         # Camera configuration
         self.first_person_location = [0.0, 0.0, 0.0]  # Camera position
@@ -130,10 +130,6 @@ class CarlaCameraClient:
             fov = config.get('FoV')
             x = self.hud_area_start[0]
             y = self.hud_area_start[1]
-            print(brightness)
-            print(frequency)
-            print(relevance)
-            print(fov)
             
             if brightness == "very dark":
                 self.hud_alpha = 1
@@ -271,7 +267,7 @@ class CarlaCameraClient:
         self.icon_positions = []
         self.hud_area_start = (0.00, 0,00)
         self.speed_hud_location = (0.0, 0.0)
-        self.speed_number_offset = (0.0,0.0)
+        self.speed_number_offset = (0,0,0)
 
     def set_vehicle_configuration(self, vehicle):
         """Set the first-person camera location based on vehicle type."""
