@@ -66,18 +66,6 @@ base_frame = {
         'hud_id': 999  # Eindeutige ID für das HUD
     }
 
-
-def save_simulation_data(data, filename="simulation_data.csv"):
-    """Speichert Simulationsdaten in einer CSV-Datei."""
-    with open(filename, mode='w', newline='') as file:
-        writer = csv.writer(file)
-        # Schreibe die Header-Zeile
-        writer.writerow(["vehicle_id", "current_speed", "current_min_gap", "position_x", "position_y"])
-
-        # Schreibe die Daten für jedes Fahrzeug
-        for row in data:
-            writer.writerow(row)
-
 def are_all_fields_valid():
     """Überprüft, ob alle Eingabefelder korrekt ausgefüllt sind."""
     all_valid = True
@@ -119,9 +107,10 @@ def run_simulation():
             current_min_gap = traci.vehicle.getMinGap(vehicle_id)
             current_speed = traci.vehicle.getSpeed(vehicle_id)
             position = traci.vehicle.getPosition(vehicle_id)  # Hole die Position des Fahrzeugs
-            
+            vehicle_type = traci.vehicle.getVehicleClass(vehicle_id) 
+
             # Speichere die Daten in der Liste
-            simulation_data.append([vehicle_id, current_speed, current_min_gap, position[0], position[1]])
+            simulation_data.append([vehicle_id, current_speed, current_min_gap, position[0], position[1], vehicle_type])
             
             new_min_gap = max(1.0, current_speed * 0.5)  # Beispielwert
             traci.vehicle.setMinGap(vehicle_id, new_min_gap)
@@ -131,6 +120,45 @@ def run_simulation():
 
     # Speichere die gesammelten Simulationsdaten in eine CSV-Datei
     save_simulation_data(simulation_data)
+
+
+def save_simulation_data(simulation_data):
+    # Überprüfe, ob die Daten die erwartete Struktur haben
+    if not simulation_data or not isinstance(simulation_data, list):
+        print("Keine gültigen Simulationsdaten zum Speichern.")
+        return
+
+    # Beispiel-CSV-Dateipfad
+    csv_filename = 'simulation_data.csv'
+
+    # Schreibe die Daten in die CSV
+    with open(csv_filename, mode='w', newline='') as file:
+        fieldnames = ['vehicle_id', 'current_speed', 'current_min_gap', 'position_x', 'position_y', 'vehicle_type']
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for entry in simulation_data:
+            # Überprüfe, ob entry eine Liste ist und die erwartete Länge hat
+            if isinstance(entry, list) and len(entry) == 6:
+                vehicle_id = entry[0]                # Zugreifen auf das erste Element
+                current_speed = entry[1]             # Zugreifen auf das zweite Element
+                current_min_gap = entry[2]           # Zugreifen auf das dritte Element
+                position_x = entry[3]                # Zugreifen auf das vierte Element
+                position_y = entry[4]                # Zugreifen auf das fünfte Element
+
+                vehicle_type = vehicle_type_mapping.get(vehicle_id, "unknown")
+                
+                # Schreibe die Zeile in die CSV
+                writer.writerow({
+                    'vehicle_id': vehicle_id,
+                    'current_speed': current_speed,
+                    'current_min_gap': current_min_gap,
+                    'position_x': position_x,
+                    'position_y': position_y,
+                    'vehicle_type': vehicle_type
+                })
+
+    print("Daten erfolgreich gespeichert!")
 
 
 def start_simulation():
@@ -366,6 +394,9 @@ def start_sumo(selected_sumocfg):
         print("SUMO konnte nicht gefunden werden. Stelle sicher, dass der Pfad korrekt ist.")
 
 
+# Dictionary zur Speicherung von Fahrzeugtypen basierend auf ihrer ID
+vehicle_type_mapping = {}
+
 def modify_vehicle_routes(selected_map):
     original_routes_file = os.path.join(sumo_base_dir, "examples", "rou", selected_map + ".rou.xml")
 
@@ -382,7 +413,6 @@ def modify_vehicle_routes(selected_map):
             vehicle_types.append("vehicle.nissan.patrol")
             probabilities.append(5)
 
-            
         for hud in hud_frames:
             probability = int(hud['entry'].get())  # Wahrscheinlichkeit aus dem Eingabefeld
             vehicle_type = hud['vehicle_type'].get()  # Ausgewählter Fahrzeugtyp
@@ -395,12 +425,16 @@ def modify_vehicle_routes(selected_map):
             if vehicle_types:
                 vehicle_type = random.choices(vehicle_types, probabilities)[0]  # Wählt basierend auf Wahrscheinlichkeiten aus
                 vehicle.set('type', vehicle_type)
+                # Fahrzeugtyp der Fahrzeug-ID zuweisen
+                vehicle_id = vehicle.get('id')
+                vehicle_type_mapping[vehicle_id] = vehicle_type
 
         # Änderungen in die Datei schreiben
         tree.write(original_routes_file)
 
     except FileNotFoundError:
         print(f"Datei {original_routes_file} nicht gefunden.")
+
 
 # Funktion zum Schließen des Hauptfensters
 def close_window():
