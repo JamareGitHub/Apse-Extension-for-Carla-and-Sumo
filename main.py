@@ -94,9 +94,8 @@ def update_vehicle_min_gap(vehicle_id, new_min_gap):
     # Setze den neuen Minimalabstand für das Fahrzeug
     traci.vehicle.setMinGap(vehicle_id, new_min_gap)
 
-#TODO:
 def run_simulation():
-    traci.start(["sumo", "-c", config.tracipath])
+    traci.start(["sumo", "-c", carla_base_dir+r"\Co-Simulation\Sumo\examples\Town01.sumocfg"])
     
     simulation_data = []  # Liste zur Speicherung der Simulationsdaten
 
