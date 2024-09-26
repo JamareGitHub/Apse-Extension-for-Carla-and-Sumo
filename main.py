@@ -89,6 +89,17 @@ def are_all_fields_valid():
     return all_valid
 
 def run_simulation(map):
+
+    min_gap_mapping = {}
+
+    # Iteriere durch jedes Fahrzeug in hud_data
+    for vehicle_type, data in hud_data.items():
+        # Hole den min_Gap für den aktuellen vehicle_type
+        min_gap = data.get("min_Gap")  # Stelle sicher, dass min_Gap existiert
+        # Speichere den min_Gap im neuen Dictionary
+        min_gap_mapping[vehicle_type] = min_gap
+
+    
     path = os.path.join(sumo_base_dir, "examples", map + ".sumocfg")
     #traci.start(["sumo", "-c", r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor\Co-Simulation\Sumo\examples\Town01.sumocfg"])
     traci.start(["sumo", "-c", path])
@@ -110,7 +121,12 @@ def run_simulation(map):
             # Speichere die Daten in der Liste
             simulation_data.append([vehicle_id, current_speed, current_min_gap, position[0], position[1], acceleration, distance_traveled, time_loss])
             
-            new_min_gap = max(1.0, current_speed * 0.5)  # Beispielwert
+            vehicle_type = vehicle_type_mapping.get(vehicle_id, "unknown")
+
+            min_gap_for_vehicle_type = hud_data.get(vehicle_type, {}).get("min_Gap", 1)
+
+            new_min_gap = max(2.0, (current_speed * 3.6 * 0.5 * min_gap_for_vehicle_type))
+
             traci.vehicle.setMinGap(vehicle_id, new_min_gap)
             #print(f"Updated minGap for {vehicle_id} from {current_min_gap} to {new_min_gap}")
 
@@ -337,7 +353,7 @@ def hudSelection():
         awareness_level = calculations.calc_awareness(fov_selection, information_relevance, information_frequency, distraction_level, fatigueness_level)
         reactTime = calculations.calc_ReactTime(distraction_level, fatigueness_level, experience_level, awareness_level, age)
         maxSpeed = calculations.calc_MaxSpeed(experience_level, awareness_level)
-        minGap = calculations.calc_MinGap(distraction_level, fatigueness_level, experience_level, awareness_level)
+        gapFactor = calculations.calc_MinGap(distraction_level, fatigueness_level, experience_level, awareness_level)
         speedFactor = calculations.calc_SpeedAd(information_frequency, fov_selection, distraction_level, fatigueness_level, experience_level, awareness_level)
 
         # Store the calculated values in the dictionary
@@ -346,7 +362,7 @@ def hudSelection():
             'fatigueness_level': fatigueness_level,
             'awareness_level': awareness_level,
             'max_speed': maxSpeed,
-            "min_Gap": minGap,
+            "min_Gap": gapFactor,
             'vehicle_type': vehicle_type,
             'speed_factor': speedFactor,
             'brightness': brightness_level
@@ -392,8 +408,11 @@ def update_max_speeds(xml_file_path, hud_data):
     root = tree.getroot()
 
     for vehicle_type, data in hud_data.items():
+
+        if vehicle_type.lower() == "vehicle.nissan.patrol":
+            continue
+
         max_speed = data['max_speed']
-        minGap = data.get('min_Gap', '')
         speedFactor = data.get('speed_factor', '')
         reactionTime = data.get('reactTime')
 
@@ -402,7 +421,6 @@ def update_max_speeds(xml_file_path, hud_data):
 
             if vtype_id == vehicle_type:
                 vtype_elem.set('maxSpeed', str(max_speed))
-                vtype_elem.set('minGap', str(minGap))
                 vtype_elem.set('speedFactor', str(speedFactor))
 
                 driverstate_params = vtype_elem.findall("./param[@key='has.driverstate.device']")
@@ -413,12 +431,12 @@ def update_max_speeds(xml_file_path, hud_data):
                     driverstate_param1.set('key', 'has.driverstate.device')
                     driverstate_param1.set('value', 'true')
 
-                reaction_time_params = vtype_elem.findall("./param[@key='maximalReactionTime']")
+                reaction_time_params = vtype_elem.findall("./param[@key='actionStepLength']")
                 if reaction_time_params:
                     reaction_time_params[0].set('value', str(reactionTime))
                 else:
                     driverstate_param2 = ET.SubElement(vtype_elem, 'param')
-                    driverstate_param2.set('key', 'maximalReactionTime')
+                    driverstate_param2.set('key', 'actionStepLength')
                     driverstate_param2.set('value', str(reactionTime))
 
                 color = "#{:02x}{:02x}{:02x}".format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
@@ -481,15 +499,8 @@ def modify_vehicle_routes(selected_map):
         # Änderungen in die Datei schreiben
         tree.write(original_routes_file)
 
-        # Ausgabe zur Überprüfung
-        print("Zugewiesene Fahrzeugtypen:")
-        for vehicle_id, vehicle_type in vehicle_type_mapping.items():
-            print(f"Fahrzeug-ID: {vehicle_id}, Fahrzeugtyp: {vehicle_type}")
-
     except FileNotFoundError:
         print(f"Datei {original_routes_file} nicht gefunden.")
-
-
 
 # Funktion zum Schließen des Hauptfensters
 def close_window():
@@ -541,11 +552,6 @@ def remove_hud(hud_id):
 def on_selection(event):
     dropdown = event.widget
     selected_value = dropdown.get()
-    
-    # Debug-Ausgabe der objects-Liste
-    print("Objects before loop:")
-    for obj in objects:
-        print(obj)
 
     # Finde das entsprechende Objekt und aktualisiere den gespeicherten Wert
     for i, (label, combobox, previous_value) in enumerate(objects):
@@ -561,18 +567,11 @@ def on_selection(event):
             # Aktualisiere den gespeicherten Wert im Objekt
             objects[i] = (label, combobox, selected_value)
             break
-    
-    # Debug-Ausgabe der objects-Liste nach der Schleife
-    print("Objects after loop:")
-    for obj in objects:
-        print(obj)
-    
+
     # Aktualisiere alle Dropdown-Menüs
     update_comboboxes()
 
     reselect_map() 
-
-
 
 def update_comboboxes():
     for _, dropdown, _ in objects:
@@ -728,7 +727,6 @@ def create_hud_frame():
 objects=[]
 
 def dropdown_opened(dropdown):
-    print("Das Dropdown-Menü wurde geöffnet!")
     dropdown['values'] = available_vehicle_types  # Aktualisiere die Werte des Dropdown-Menüs
 
 def getList():
