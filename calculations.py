@@ -1,16 +1,8 @@
-import tkinter as tk
-import subprocess
-import xml.etree.ElementTree as ET
-from tkinter import filedialog, messagebox
-import os
-import random
-import time
-import xml.dom.minidom as minidom
-
 import math
+import random
+import numpy as np
 
 def calc_distraction(information_relevance, fov, information_frequency, brightness_level):
-    
     # Einheitliches Mapping
     relevance_mapping = {"unimportant": 1, "neutral": 2, "important": 3}
     fov_mapping = {"small": 1, "medium": 2, "large": 3}
@@ -38,7 +30,6 @@ def calc_distraction(information_relevance, fov, information_frequency, brightne
 
 
 def calc_fatigueness(information_relevance, fov, information_frequency):
-    
     # Einheitliches Mapping
     relevance_mapping = {"unimportant": 1, "neutral": 2, "important": 3}
     fov_mapping = {"small": 1, "medium": 2, "large": 3}
@@ -63,7 +54,6 @@ def calc_fatigueness(information_relevance, fov, information_frequency):
 
 
 def calc_awareness(fov, information_relevance, information_frequency, distraction_level, fatigueness_level):
-    
     # Einheitliches Mapping
     relevance_mapping = {"unimportant": 1, "neutral": 2, "important": 3}
     fov_mapping = {"small": 1, "medium": 2, "large": 3}
@@ -92,94 +82,89 @@ def calc_awareness(fov, information_relevance, information_frequency, distractio
 
 
 def calc_ReactTime(distraction_level, fatigueness_level, experience_level, awareness_level, age):
+    # Normalwert (1.0) in einem Bereich von 0.6 bis 2.0
+    normal_value = 1.0
+    std_dev = 0.4  # Standardabweichung für die Normalverteilung
 
-    base_reactTime = 250
-    
-    # Nicht-lineare Beziehung zu Ablenkung und Müdigkeit
-    distraction_effect = 4 * (distraction_level ** 1.5)  # Erhöht den Einfluss bei hohen Werten
-    fatigueness_effect = 3 * (fatigueness_level ** 1.5)
-    
-    # Linearer Effekt von Erfahrung und Bewusstsein
-    experience_effect = -1 * experience_level
-    awareness_effect = -4 * awareness_level
+    # Berechnung des Einflusses auf den Reaktionszeitwert
+    distraction_effect = -0.15 * (distraction_level - 1)  # Negativer Einfluss
+    fatigueness_effect = -0.1 * (fatigueness_level - 1)  # Negativer Einfluss
+    experience_effect = 0.05 * experience_level  # Positiver Einfluss
+    awareness_effect = -0.1 * awareness_level  # Negativer Einfluss
+    age_effect = 0.01 * age  # Positiver Einfluss
 
-    # Linearer Effekt des Alters
-    age_effect = 0.1 * age
+    # Gesamter Einfluss auf die Reaktionszeit
+    total_effect = distraction_effect + fatigueness_effect + experience_effect + awareness_effect + age_effect
 
-    reactTime = base_reactTime + distraction_effect + fatigueness_effect + experience_effect + awareness_effect + age_effect
-    return int(reactTime)
+    # Berechnung der Reaktionszeit unter Berücksichtigung der Normalverteilung
+    react_time = normal_value + total_effect + np.random.normal(0, std_dev)
+
+    # Normierung auf den Bereich von 0.6 bis 2.0
+    return max(0.6, min(2.0, react_time))  # Sicherstellen, dass der Wert >= 0.6 und <= 2.0 ist
+
+# Beispielaufruf
+result = calc_ReactTime(1.5, 1.2, 0.5, 1.0, 30)
+print(f"Berechnete Reaktionszeit: {result:.2f} Sekunden")
 
 
 def calc_MinGap(distraction_level, fatigueness_level, experience_level, awareness_level):
-    
-    # Exponentieller Effekt von Ablenkung und Müdigkeit (immer positiv)
-    distraction_effect = -0.6 * (2 ** distraction_level)
-    fatigueness_effect = -0.9 * (2 ** fatigueness_level)
+    # Berechnung des Faktors für die Abweichung vom idealen Mindestabstand
+    distraction_effect = -0.3 * (2 ** distraction_level)  # Reduziere den Einfluss von Ablenkung
+    fatigueness_effect = -0.4 * (2 ** fatigueness_level)   # Reduziere den Einfluss von Müdigkeit
+    experience_effect = 0.5 * experience_level            # Erhöhe den Einfluss von Erfahrung
+    awareness_effect = 0.5 * awareness_level               # Erhöhe den Einfluss des Bewusstseins
 
-    # Linearer Effekt von Erfahrung und Bewusstsein
-    experience_effect = 0.7 * experience_level
-    awareness_effect = 1 * awareness_level
+    min_gap_factor = distraction_effect + fatigueness_effect + experience_effect + awareness_effect
 
-    # Basiswert für Mindestabstand
-    base_gap = 5  # Ein positiver Basiswert, der als Mindestabstand dient.
+    # Sicherstellen, dass der Faktor zwischen 0.4 und 1.5 liegt
+    factor = 1 + min_gap_factor  # 1 ist der neutrale Faktor (kein Einfluss)
+    if factor < 0.4:
+        factor = 0.4
+    elif factor > 1.5:
+        factor = 1.5
 
-    # Berechnung des Mindestabstands mit einem positiven Basiswert
-    minGap = base_gap + distraction_effect + fatigueness_effect + experience_effect + awareness_effect
-
-    # Sicherstellen, dass der Mindestabstand immer größer als 0 ist
-    if minGap < base_gap:
-        minGap = base_gap
-
-    return minGap
+    return factor
 
 
 def calc_SpeedAd(information_frequency, fov, distraction_level, fatigueness_level, experience_level, awareness_level):
-    
-    # Einheitliches Mapping
     fov_mapping = {"small": 1, "medium": 2, "large": 3}
     frequency_mapping = {"minimum": 1, "average": 2, "maximum": 3}
     
     fov_value = fov_mapping.get(fov, 2)
     frequency_value = frequency_mapping.get(information_frequency, 2)
 
-    # Quadratische Abhängigkeit von Ablenkung und Müdigkeit
-    distraction_effect = 0.2 * (distraction_level ** 2)
-    fatigueness_effect = -0.3 * (fatigueness_level ** 2)
+    # Anpassung der Effekte für eine höhere Wahrscheinlichkeit von Werten über 1.0
+    distraction_effect = 0.1 * (distraction_level ** 2)  # Geringerer Einfluss von Ablenkung
+    fatigueness_effect = -0.2 * (fatigueness_level ** 2)  # Milder negativer Einfluss von Müdigkeit
 
-    # Linearer Effekt von Erfahrung, Bewusstsein, FOV und Informationsdichte
-    experience_effect = 0.1 * experience_level
-    awareness_effect = -0.3 * awareness_level
-    fov_effect = -0.02 * fov_value
-    frequency_effect = -0.01 * frequency_value
+    experience_effect = 0.2 * experience_level  # Starker positiver Einfluss von Erfahrung
+    awareness_effect = -0.2 * awareness_level  # Milder negativer Einfluss von Bewusstsein
+    fov_effect = -0.01 * fov_value  # Geringer negativer Einfluss des Sichtfeldes
+    frequency_effect = -0.005 * frequency_value  # Geringer negativer Einfluss der Informationsdichte
 
-    # Berechnung der ursprünglichen Geschwindigkeit
-    speedAd = distraction_effect + fatigueness_effect + experience_effect + awareness_effect + fov_effect + frequency_effect
+    speed_ad = distraction_effect + fatigueness_effect + experience_effect + awareness_effect + fov_effect + frequency_effect
 
-    # Normierung des Ergebnisses
-    min_speedAd = -4
-    max_speedAd = 6
-    normalized_speedAd = (speedAd - min_speedAd) / (max_speedAd - min_speedAd)
+    # Normierung auf den Bereich von 0.7 bis 1.8
+    min_speed_ad = 0.7
+    max_speed_ad = 1.8
+    normalized_speed_ad = (speed_ad - (-2)) / (4 - (-2))  # Beispiel für Normierung, -2 bis 4 als Bereich
+    scaled_speed_ad = normalized_speed_ad * (max_speed_ad - min_speed_ad) + min_speed_ad
 
-    # Skalierung auf den Bereich 0.7 bis 1.6
-    scaled_speedAd = normalized_speedAd * (1.6 - 0.7) + 0.7
-    return scaled_speedAd
-
-
-def calc_LaneChange(fatigueness_level, experience_level, awareness_level):
-
-    # Quadratische Abhängigkeit von Müdigkeit
-    fatigueness_effect = -0.1 * (fatigueness_level ** 2)
-
-    # Linearer Effekt von Erfahrung und Bewusstsein
-    experience_effect = 0.4 * experience_level
-    awareness_effect = 0.3 * awareness_level
-
-    laneChange = 1 + fatigueness_effect + experience_effect + awareness_effect
-    return laneChange
+    return max(0.7, min(1.8, scaled_speed_ad))  # Sicherstellen, dass der Wert >= 0.7 und <= 1.8 ist
 
 
 def calc_MaxSpeed(experience_level, awareness_level):
+    max_speed = 180 + 3 * experience_level + 2.5 * awareness_level  # Basiswert
+    return max(120, min(230, max_speed))  # Sicherstellen, dass der Wert zwischen 120 und 230 liegt
 
-    # Linearer Effekt von Erfahrung und Bewusstsein
-    maxSpeed = 120 + 3 * experience_level + 2.5 * awareness_level
-    return maxSpeed
+
+def calc_acceleration(experience_level, awareness_level):
+    # Basiswert für die Beschleunigung
+    base_acceleration = 3.5
+    experience_effect = 0.5 * experience_level
+    awareness_effect = 0.5 * awareness_level
+    
+    acceleration = base_acceleration + experience_effect + awareness_effect
+    
+    # Sicherstellen, dass die Beschleunigung > 0 und <= 10
+    return max(0.1, min(10, acceleration))  # Mindestwert von 0.1 für Sicherheitsabstand

@@ -12,7 +12,7 @@ import xml.dom.minidom as minidom
 from PIL import Image, ImageTk
 import traci
 import csv
-
+from datetime import datetime
 import config
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
@@ -37,6 +37,9 @@ fov = ["small", "medium", "large"]
 
 hud_count = 0
 
+# Dictionary to store HUD attributes
+hud_data = {}
+
 # Globale Liste der verfügbaren Fahrzeugtypen
 available_vehicle_types = [
     "vehicle.audi.a2", "vehicle.audi.tt",
@@ -56,15 +59,17 @@ all_vehicle_types = [
 vtypes_xml_path = carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml"
 
 base_frame = {
-        'header': "header_entry",
-        'entry': 0.5,
+        'header': "Hudless Car",
+        'entry': 5,
         'brightness_var': "none",
         'frequency_var': "none",
         'relevance_var': "none",
         'fov_var': "none",
-        'vehicle_type': "",
-        'hud_id': 999  # Eindeutige ID für das HUD
+        'vehicle_type': "vehicle.nissan.patrol",
+        'hud_id': "999"  # Eindeutige ID für das HUD
     }
+
+hud_id_mapping = {}
 
 def are_all_fields_valid():
     """Überprüft, ob alle Eingabefelder korrekt ausgefüllt sind."""
@@ -78,24 +83,23 @@ def are_all_fields_valid():
             all_valid = False
         else:
             hud_frame['entry'].config(bg="white")
-        
-    
-    # Füge hier weitere spezifische Validierungslogik hinzu, falls nötig
 
     return all_valid
 
-def update_vehicle_min_gap(vehicle_id, new_min_gap):
-    """
-    Aktualisiert den Minimalabstand eines Fahrzeugs während der Simulation.
-    
-    :param vehicle_id: ID des Fahrzeugs, dessen MinGap geändert werden soll.
-    :param new_min_gap: Neuer Minimalabstand, der gesetzt werden soll.
-    """
-    # Setze den neuen Minimalabstand für das Fahrzeug
-    traci.vehicle.setMinGap(vehicle_id, new_min_gap)
+def run_simulation(map):
 
-def run_simulation():
-    traci.start(["sumo", "-c", carla_base_dir+r"\Co-Simulation\Sumo\examples\Town01.sumocfg"])
+    min_gap_mapping = {}
+
+    # Iteriere durch jedes Fahrzeug in hud_data
+    for vehicle_type, data in hud_data.items():
+        # Hole den min_Gap für den aktuellen vehicle_type
+        min_gap = data.get("min_Gap")  # Stelle sicher, dass min_Gap existiert
+        # Speichere den min_Gap im neuen Dictionary
+        min_gap_mapping[vehicle_type] = min_gap
+
+    
+    path = os.path.join(sumo_base_dir, "examples", map + ".sumocfg")
+    traci.start(["sumo", "-c", path])
     
     simulation_data = []  # Liste zur Speicherung der Simulationsdaten
 
@@ -105,21 +109,30 @@ def run_simulation():
         for vehicle_id in traci.vehicle.getIDList():
             current_min_gap = traci.vehicle.getMinGap(vehicle_id)
             current_speed = traci.vehicle.getSpeed(vehicle_id)
-            position = traci.vehicle.getPosition(vehicle_id)  # Hole die Position des Fahrzeugs
-            vehicle_type = traci.vehicle.getVehicleClass(vehicle_id) 
+            position = traci.vehicle.getPosition(vehicle_id)  
+            acceleration = traci.vehicle.getAcceleration(vehicle_id)
+            distance_traveled = traci.vehicle.getDistance(vehicle_id)
+            time_loss = traci.vehicle.getTimeLoss(vehicle_id)
 
             # Speichere die Daten in der Liste
-            simulation_data.append([vehicle_id, current_speed, current_min_gap, position[0], position[1], vehicle_type])
+            simulation_data.append([vehicle_id, current_speed, current_min_gap, position[0], position[1], acceleration, distance_traveled, time_loss])
             
-            new_min_gap = max(1.0, current_speed * 0.5)  # Beispielwert
+            vehicle_type = vehicle_type_mapping.get(vehicle_id, "unknown")
+
+            min_gap_for_vehicle_type = hud_data.get(vehicle_type, {}).get("min_Gap", 1)
+
+            new_min_gap = max(2.0, (current_speed * 3.6 * 0.5 * min_gap_for_vehicle_type))
+
             traci.vehicle.setMinGap(vehicle_id, new_min_gap)
-            #print(f"Updated minGap for {vehicle_id} from {current_min_gap} to {new_min_gap}")
+    
 
     traci.close()
 
     # Speichere die gesammelten Simulationsdaten in eine CSV-Datei
     save_simulation_data(simulation_data)
 
+# Dictionary für jede Fahrzeug-ID, um den entsprechenden Fahrzeugtyp zu speichern
+vehicle_type_mapping = {}
 
 def save_simulation_data(simulation_data):
     # Überprüfe, ob die Daten die erwartete Struktur haben
@@ -127,38 +140,117 @@ def save_simulation_data(simulation_data):
         print("Keine gültigen Simulationsdaten zum Speichern.")
         return
 
-    # Beispiel-CSV-Dateipfad
-    csv_filename = 'simulation_data.csv'
+    # Aktuelles Datum und Uhrzeit erhalten
+    now = datetime.now()
+
+    # Formatieren des Datums und der Uhrzeit
+    timestamp = now.strftime("%H-%M-%S_%Y-%m-%d")
+
+    # Beispiel-CSV-Dateipfad mit Datum und Uhrzeit
+    csv_filename = f'simulation_data_{timestamp}.csv'
 
     # Schreibe die Daten in die CSV
     with open(csv_filename, mode='w', newline='') as file:
-        fieldnames = ['vehicle_id', 'current_speed', 'current_min_gap', 'position_x', 'position_y', 'vehicle_type']
+        fieldnames = ['vehicle_id',
+                    'hud_id',
+                    'vehicle_type',
+                    'position_x',
+                    'position_y',
+                    'current_speed',
+                    'current_min_gap',
+                    'acceleration',
+                    'distance_traveled',
+                    'time_loss',
+                    'maxSpeed',
+                    'speedFactor',
+                    'reactionTime',
+                    'fatiguenessLevel',
+                    'awarenessLevel']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
 
         for entry in simulation_data:
             # Überprüfe, ob entry eine Liste ist und die erwartete Länge hat
-            if isinstance(entry, list) and len(entry) == 6:
+            if isinstance(entry, list):
                 vehicle_id = entry[0]                # Zugreifen auf das erste Element
                 current_speed = entry[1]             # Zugreifen auf das zweite Element
                 current_min_gap = entry[2]           # Zugreifen auf das dritte Element
                 position_x = entry[3]                # Zugreifen auf das vierte Element
                 position_y = entry[4]                # Zugreifen auf das fünfte Element
+                acceleration = entry[5]
+                distance_traveled = entry[6]
+                time_loss = entry[7]
 
+                # Hole den vehicle_type basierend auf der vehicle_id aus dem Mapping
                 vehicle_type = vehicle_type_mapping.get(vehicle_id, "unknown")
+                
+                # Hole die hud_id basierend auf dem Fahrzeugtyp
+                hud_id = hud_id_mapping.get(vehicle_type, "unknown")
+
+                # Hole die HUD-Daten basierend auf dem vehicle_type
+                hud_data_for_type = hud_data.get(vehicle_type, {})
+
+                # Hole die spezifischen Werte aus dem HUD-Datensatz
+                max_speed = hud_data_for_type.get('max_speed', 'N/A')
+                speedFactor = hud_data_for_type.get('speed_factor', 'N/A')
+                reactionTime = hud_data_for_type.get('reactTime', 'N/A')
+                fatiguenessLevel = hud_data_for_type.get('fatigueness_level', 'N/A')
+                awarenessLevel = hud_data_for_type.get('awareness_level', 'N/A')
                 
                 # Schreibe die Zeile in die CSV
                 writer.writerow({
                     'vehicle_id': vehicle_id,
-                    'current_speed': current_speed,
-                    'current_min_gap': current_min_gap,
+                    'hud_id': hud_id,
+                    'vehicle_type': vehicle_type,
                     'position_x': position_x,
                     'position_y': position_y,
-                    'vehicle_type': vehicle_type
+                    'current_speed': current_speed,
+                    'current_min_gap': current_min_gap,
+                    'acceleration': acceleration,
+                    'distance_traveled': distance_traveled,
+                    'time_loss': time_loss,
+                    'maxSpeed': max_speed,
+                    'speedFactor': speedFactor,
+                    'reactionTime': reactionTime,
+                    'fatiguenessLevel': fatiguenessLevel,
+                    'awarenessLevel': awarenessLevel
                 })
 
     print("Daten erfolgreich gespeichert!")
 
+
+string_hud_frames = []
+
+def convert_hudFrames():
+
+    for hud in hud_frames:
+        # Neues Dictionary für die umgewandelten Werte
+        string_hud = {
+            'header': str(hud['header'].get()),
+            'entry': str(hud['entry'].get()),
+            'brightness_var': str(hud['brightness_var'].get()),
+            'frequency_var': str(hud['frequency_var'].get()),
+            'relevance_var': str(hud['relevance_var'].get()),
+            'fov_var': str(hud['fov_var'].get()),
+            'vehicle_type': str(hud['vehicle_type'].get()),
+            'hud_id': str(hud['hud_id'])
+        }
+    
+        # Füge das neue Dictionary zur Liste hinzu
+        string_hud_frames.append(string_hud)
+
+    print(string_hud_frames)
+
+def map_vehicle_type_to_hud_id():
+    for hud in string_hud_frames:
+        vehicle_type = hud['vehicle_type']  # Den Fahrzeugtyp des HUDs extrahieren
+        hud_id = hud['hud_id']  # Die hud_id extrahieren
+        
+        # Mapping von vehicle_type zu hud_id hinzufügen
+        hud_id_mapping[vehicle_type] = hud_id
+
+        # Optional: Debugging-Ausgabe, um sicherzustellen, dass das Mapping korrekt ist
+        print(f"Mapping vehicle_type {vehicle_type} to hud_id {hud_id}")
 
 def start_simulation():
     if not map_list.curselection():
@@ -171,6 +263,7 @@ def start_simulation():
     
     if hudless_var.get() == False and len(hud_frames) == 0:
         messagebox.showwarning("No simulation data", "Please allow simulation without HUD or create HUDs to simulate.")
+        return
 
     selected_index = map_list.curselection()
 
@@ -178,28 +271,70 @@ def start_simulation():
 
     global hud_count
 
+    convert_hudFrames()
+
+    if hudless_var.get():
+        string_hud_frames.append(base_frame)
+        hud_id_mapping["vehicle.nissan.patrol"] = "999"
+        print("BASE CAR EXISTS!")
+
+    map_vehicle_type_to_hud_id()
+
     hud_data = hudSelection()
-        
-    print("Gespeicherte HUD-Daten:")
-    for vehicle_type in hud_data.items():
-        print(f"{vehicle_type}")
 
     # Update der maximalen Geschwindigkeiten
     update_max_speeds(carla_base_dir + r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml", hud_data)
-
-    if hudless_var.get():
-        print("BASE CAR EXISTS!")
 
     if selected_index:
         selected_map = map_list.get(selected_index[0])
         selected_sumocfg = maps[selected_map]
 
-        writeXML(hud_frames)
+        writeXML(string_hud_frames)
 
         # Erstelle die .rou.xml Datei für die Fahrzeuge
         modify_vehicle_routes(selected_map)
-    
-        if simulate_var.get():  # Wenn Checkbox angekreuzt ist
+
+        carla_exe = os.path.join(carla_base_dir, "CarlaUE4.exe")
+
+        if spectate_var.get() and simulate_var.get() == False:
+            print("TESTERS")
+
+            try: 
+                print("Starte CarlaUE4.exe im Off-Screen-Modus...")
+                subprocess.Popen([carla_exe, "-RenderOffScreen"])
+
+                # Warte ein paar Sekunden, damit CarlaUE4.exe gestartet werden kann
+                time.sleep(20)
+                print("Wartezeit nach dem Start von CarlaUE4.exe.")
+
+                # Führe das Konfigurationsskript aus
+                print("Starte Konfigurationsskript: {}".format(config_script))
+                config_command = ["python", config_script, "--map", selected_map]
+                configsubprocess = subprocess.Popen(config_command, cwd=os.path.dirname(config_script))
+                configsubprocess.wait()
+                print("Wartezeit vor dem Start des Synchronisationsskripts.")
+
+                # Führe das Synchronisationsskript aus
+                sync_script = os.path.join(sumo_base_dir, "run_synchronization.py")
+                print("Starte Synchronisationsskript mit SUMO: {}".format(selected_sumocfg))
+                sync_command = ["sumo-gui", "-c", selected_sumocfg, "--start", "--tripinfo-output", "tripinfo.xml"]
+                subprocess.Popen(sync_command, cwd=os.path.dirname(sync_script))
+                
+                try:
+                    print("starting spectator")
+                    spectatorpath = "./spectator.py"
+                    spectatordir = os.path.dirname(spectatorpath)
+                    subprocess.Popen(["python", spectatorpath, spectatordir])
+                    print("started spectator")
+                except FileNotFoundError as e:
+                    print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
+
+                run_simulation(selected_map)
+
+            except FileNotFoundError as e:
+                print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
+
+        elif simulate_var.get():
             carla_exe = os.path.join(carla_base_dir, "CarlaUE4.exe")
 
             try:
@@ -223,58 +358,44 @@ def start_simulation():
                 print("Starte Synchronisationsskript mit SUMO: {}".format(selected_sumocfg))
                 sync_command = ["python", sync_script, selected_sumocfg, "--sumo-gui", "--sync-vehicle-color"]
                 subprocess.Popen(sync_command, cwd=os.path.dirname(sync_script))
-                run_simulation()
+
+                if spectate_var.get():
+                    try:
+                        print("starting spectator")
+                        spectatorpath = "./spectator.py"
+                        spectatordir = os.path.dirname(spectatorpath)
+                        subprocess.Popen(["python", spectatorpath, spectatordir])
+                        print("started spectator")
+                    except FileNotFoundError as e:
+                        print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
+
+                run_simulation(selected_map)
 
             except FileNotFoundError as e:
                 print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
+
         else:
             start_sumo(selected_sumocfg)
-            run_simulation()
+            run_simulation(selected_map)
 
-
-
-        if spectate_var.get():
-            try:
-                print("starting spectator")
-                spectatorpath = "./spectator.py"
-                spectatordir = os.path.dirname(spectatorpath)
-                subprocess.Popen(["python", spectatorpath, spectatordir])
-                print("started spectator")
-            except FileNotFoundError as e:
-                print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
 
 def hudSelection():
     experience_level = 5
     age = 30
 
-    # Dictionary to store HUD attributes
-    hud_data = {}
-
-    if hudless_var.get():
-        hud_data["vehicle.nissan.patrol"] = {
-            'reactTime': 23,
-            'fatigueness_level': 1,
-            'awareness_level': 1,
-            'max_speed': 160,
-            "min_Gap": 5,
-            'vehicle_type': "vehicle.nissan.patrol",
-            'speed_factor': 1,
-            'brightness': "none"
-        }
-
-    for hud in hud_frames:
-        brightness_level = hud['brightness_var'].get()
-        information_frequency = hud['frequency_var'].get()
-        information_relevance = hud['relevance_var'].get()
-        fov_selection = hud['fov_var'].get()
-        vehicle_type = hud['vehicle_type'].get()
+    for hud in string_hud_frames:
+        brightness_level = hud['brightness_var']
+        information_frequency = hud['frequency_var']
+        information_relevance = hud['relevance_var']
+        fov_selection = hud['fov_var']
+        vehicle_type = hud['vehicle_type']
 
         distraction_level = calculations.calc_distraction(information_relevance, fov_selection, information_frequency, brightness_level)
         fatigueness_level = calculations.calc_fatigueness(information_relevance, fov_selection, information_frequency)
         awareness_level = calculations.calc_awareness(fov_selection, information_relevance, information_frequency, distraction_level, fatigueness_level)
         reactTime = calculations.calc_ReactTime(distraction_level, fatigueness_level, experience_level, awareness_level, age)
         maxSpeed = calculations.calc_MaxSpeed(experience_level, awareness_level)
-        minGap = calculations.calc_MinGap(distraction_level, fatigueness_level, experience_level, awareness_level)
+        gapFactor = calculations.calc_MinGap(distraction_level, fatigueness_level, experience_level, awareness_level)
         speedFactor = calculations.calc_SpeedAd(information_frequency, fov_selection, distraction_level, fatigueness_level, experience_level, awareness_level)
 
         # Store the calculated values in the dictionary
@@ -283,7 +404,7 @@ def hudSelection():
             'fatigueness_level': fatigueness_level,
             'awareness_level': awareness_level,
             'max_speed': maxSpeed,
-            "min_Gap": minGap,
+            "min_Gap": gapFactor,
             'vehicle_type': vehicle_type,
             'speed_factor': speedFactor,
             'brightness': brightness_level
@@ -292,31 +413,16 @@ def hudSelection():
     return hud_data
 
 
-def writeXML(hud_frames):
+def writeXML(hud_list):
     root = ET.Element("Vehicles")
-
-    if hudless_var.get():
-        vehicle_type = "vehicle.nissan.patrol"
-        brightness = "none"
-        frequency = "none"
-        relevance = "none"
-        fov = "none"
-        hud_name = "No HUD"
-
-        vehicle_element = ET.SubElement(root, "Vehicle", type_id=vehicle_type)
-        ET.SubElement(vehicle_element, "HUDName").text = hud_name
-        ET.SubElement(vehicle_element, "Brightness").text = brightness
-        ET.SubElement(vehicle_element, "Frequency").text = frequency
-        ET.SubElement(vehicle_element, "Relevance").text = relevance
-        ET.SubElement(vehicle_element, "FoV").text = fov
-        
-    for hud in hud_frames:
-        vehicle_type = hud['vehicle_type'].get()
-        brightness = hud['brightness_var'].get()
-        frequency = hud['frequency_var'].get()
-        relevance = hud['relevance_var'].get()
-        fov = hud['fov_var'].get()
-        hud_name = hud['header'].get()
+  
+    for hud in hud_list:
+        vehicle_type = hud['vehicle_type']
+        brightness = hud['brightness_var']
+        frequency = hud['frequency_var']
+        relevance = hud['relevance_var']
+        fov = hud['fov_var']
+        hud_name = hud['header']
 
         vehicle_element = ET.SubElement(root, "Vehicle", type_id=vehicle_type)
         ET.SubElement(vehicle_element, "HUDName").text = hud_name
@@ -344,8 +450,11 @@ def update_max_speeds(xml_file_path, hud_data):
     root = tree.getroot()
 
     for vehicle_type, data in hud_data.items():
+
+        if vehicle_type.lower() == "vehicle.nissan.patrol":
+            continue
+
         max_speed = data['max_speed']
-        minGap = data.get('min_Gap', '')
         speedFactor = data.get('speed_factor', '')
         reactionTime = data.get('reactTime')
 
@@ -354,7 +463,6 @@ def update_max_speeds(xml_file_path, hud_data):
 
             if vtype_id == vehicle_type:
                 vtype_elem.set('maxSpeed', str(max_speed))
-                vtype_elem.set('minGap', str(minGap))
                 vtype_elem.set('speedFactor', str(speedFactor))
 
                 driverstate_params = vtype_elem.findall("./param[@key='has.driverstate.device']")
@@ -365,12 +473,12 @@ def update_max_speeds(xml_file_path, hud_data):
                     driverstate_param1.set('key', 'has.driverstate.device')
                     driverstate_param1.set('value', 'true')
 
-                reaction_time_params = vtype_elem.findall("./param[@key='maximalReactionTime']")
+                reaction_time_params = vtype_elem.findall("./param[@key='actionStepLength']")
                 if reaction_time_params:
                     reaction_time_params[0].set('value', str(reactionTime))
                 else:
                     driverstate_param2 = ET.SubElement(vtype_elem, 'param')
-                    driverstate_param2.set('key', 'maximalReactionTime')
+                    driverstate_param2.set('key', 'actionStepLength')
                     driverstate_param2.set('value', str(reactionTime))
 
                 color = "#{:02x}{:02x}{:02x}".format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
@@ -409,13 +517,9 @@ def modify_vehicle_routes(selected_map):
         vehicle_types = []
         probabilities = []
 
-        if hudless_var.get():
-            vehicle_types.append("vehicle.nissan.patrol")
-            probabilities.append(5)
-
-        for hud in hud_frames:
-            probability = int(hud['entry'].get())  # Wahrscheinlichkeit aus dem Eingabefeld
-            vehicle_type = hud['vehicle_type'].get()  # Ausgewählter Fahrzeugtyp
+        for hud in string_hud_frames:
+            probability = int(hud['entry'])  # Wahrscheinlichkeit aus dem Eingabefeld
+            vehicle_type = hud['vehicle_type']  # Ausgewählter Fahrzeugtyp
 
             vehicle_types.append(vehicle_type)
             probabilities.append(probability)
@@ -423,10 +527,15 @@ def modify_vehicle_routes(selected_map):
         # Fahrzeugtypen den Fahrzeugen in der Route zuweisen
         for vehicle in root.findall('vehicle'):
             if vehicle_types:
-                vehicle_type = random.choices(vehicle_types, probabilities)[0]  # Wählt basierend auf Wahrscheinlichkeiten aus
-                vehicle.set('type', vehicle_type)
-                # Fahrzeugtyp der Fahrzeug-ID zuweisen
                 vehicle_id = vehicle.get('id')
+
+                # Wählt basierend auf Wahrscheinlichkeiten einen Fahrzeugtyp aus
+                vehicle_type = random.choices(vehicle_types, probabilities)[0]  
+
+                # Fahrzeugtyp in der Route setzen
+                vehicle.set('type', vehicle_type)
+
+                # Fahrzeug-ID mit dem Fahrzeugtyp speichern
                 vehicle_type_mapping[vehicle_id] = vehicle_type
 
         # Änderungen in die Datei schreiben
@@ -434,7 +543,6 @@ def modify_vehicle_routes(selected_map):
 
     except FileNotFoundError:
         print(f"Datei {original_routes_file} nicht gefunden.")
-
 
 # Funktion zum Schließen des Hauptfensters
 def close_window():
@@ -449,6 +557,7 @@ def add_hud():
     
     # Erstelle das HUD ohne Argument
     hud_frame = create_hud_frame()
+
     hud_frames.append(hud_frame)
 
     vehicle_type = hud_frame['vehicle_type'].get()
@@ -485,11 +594,6 @@ def remove_hud(hud_id):
 def on_selection(event):
     dropdown = event.widget
     selected_value = dropdown.get()
-    
-    # Debug-Ausgabe der objects-Liste
-    print("Objects before loop:")
-    for obj in objects:
-        print(obj)
 
     # Finde das entsprechende Objekt und aktualisiere den gespeicherten Wert
     for i, (label, combobox, previous_value) in enumerate(objects):
@@ -505,18 +609,11 @@ def on_selection(event):
             # Aktualisiere den gespeicherten Wert im Objekt
             objects[i] = (label, combobox, selected_value)
             break
-    
-    # Debug-Ausgabe der objects-Liste nach der Schleife
-    print("Objects after loop:")
-    for obj in objects:
-        print(obj)
-    
+
     # Aktualisiere alle Dropdown-Menüs
     update_comboboxes()
 
     reselect_map() 
-
-
 
 def update_comboboxes():
     for _, dropdown, _ in objects:
@@ -547,14 +644,14 @@ def create_hud_frame():
     global header_entry
     header_entry = tk.Entry(frame, width=20, font=('Helvetica', 14, 'bold'))
     header_entry.insert(0, f"HUD {hud_number}")
-    header_entry.grid(row=0, column=0, pady=10, sticky='n')
+    header_entry.grid(row=0, column=0, pady=10, padx=10, sticky='n')
 
     # Wahrscheinlichkeit eingeben
-    label_prob = tk.Label(frame, text="Wahrscheinlichkeit eingeben:", bg="white")
+    label_prob = tk.Label(frame, text="HUD Probability: ", bg="white", font=('Helvetica', 11))
     label_prob.grid(row=1, column=0, pady=5, padx=10, sticky='w')
     
     probability_var = tk.StringVar()
-    probability_entry = tk.Entry(frame, textvariable=probability_var, width=15)
+    probability_entry = tk.Entry(frame, textvariable=probability_var, width=15, font=('Helvetica', 11))
 
     # Register the validation function
     validate_command = frame.register(lambda value: on_validate_input(value, probability_entry))
@@ -563,7 +660,7 @@ def create_hud_frame():
     probability_entry.grid(row=1, column=1, pady=5, padx=10, sticky='w')
 
     # Tooltip für Wahrscheinlichkeit
-    prob_tooltip = ToolTip(probability_entry, "Wahrscheinlichkeit, dass das HUD angezeigt wird.")
+    prob_tooltip = ToolTip(probability_entry, "Probability is set in fractions. Please only use integers > 0.")
 
     # Button für Fragezeichen-Tooltip
     prob_question_button = tk.Button(frame, text="?", command=prob_tooltip.show_tooltip, width=3)
@@ -572,15 +669,18 @@ def create_hud_frame():
     prob_question_button.bind("<Leave>", lambda event, tooltip=prob_tooltip: tooltip.hide_tooltip())
 
     # Helligkeit auswählen
-    label_brightness = tk.Label(frame, text="Helligkeitsniveau auswählen:", bg="white")
+    label_brightness = tk.Label(frame, text="HUD brightness: ", bg="white", font=('Helvetica', 11))
     label_brightness.grid(row=2, column=0, pady=5, padx=10, sticky='w')
     
     brightness_var = tk.StringVar(frame)
     brightness_var.set(brightness_level[2])
-    brightness_menu = tk.OptionMenu(frame, brightness_var, *brightness_level)
-    brightness_menu.grid(row=2, column=1, pady=5, padx=10, sticky='w')
+    brightness_menu = ttk.Combobox(frame, textvariable=brightness_var, values=brightness_level, state="readonly", font=('Helvetica', 11))
+    brightness_menu.current(1)  # Setzt standardmäßig den ersten verfügbaren Wert
+    brightness_menu.grid(row=2, column=1, pady=5, padx=10, sticky='ew')
 
-    brightness_tooltip = ToolTip(brightness_menu, "Helligkeitsniveau des HUDs.")
+    brightness_menu.bind('<<ComboboxSelected>>', on_selection)
+
+    brightness_tooltip = ToolTip(brightness_menu, "Very dark: HUD is very visible.\nVery bright: HUD is almost see-through.")
     
     brightness_question_button = tk.Button(frame, text="?", command=brightness_tooltip.show_tooltip, width=3)
     brightness_question_button.grid(row=2, column=2, padx=5)
@@ -588,15 +688,18 @@ def create_hud_frame():
     brightness_question_button.bind("<Leave>", lambda event, tooltip=brightness_tooltip: tooltip.hide_tooltip())
 
     # Informationsdichte auswählen
-    label_frequency = tk.Label(frame, text="Informationsdichte für HUD auswählen:", bg="white")
+    label_frequency = tk.Label(frame, text="Information frequency: ", bg="white", font=('Helvetica', 11))
     label_frequency.grid(row=3, column=0, pady=5, padx=10, sticky='w')
     
     frequency_var = tk.StringVar(frame)
     frequency_var.set(information_frequency[1])
-    frequency_menu = tk.OptionMenu(frame, frequency_var, *information_frequency)
-    frequency_menu.grid(row=3, column=1, pady=5, padx=10, sticky='w')
+    frequency_menu = ttk.Combobox(frame, textvariable=frequency_var, values=information_frequency, state="readonly", font=('Helvetica', 11))
+    frequency_menu.current(1)  # Setzt standardmäßig den ersten verfügbaren Wert
+    frequency_menu.grid(row=3, column=1, pady=5, padx=10, sticky='ew')
 
-    frequency_tooltip = ToolTip(frequency_menu, "Informationsdichte des HUDs.")
+    frequency_menu.bind('<<ComboboxSelected>>', on_selection)
+
+    frequency_tooltip = ToolTip(frequency_menu, "Minimum: the information is only displayed when needed\nMaximum: information is always displayed")
     
     frequency_question_button = tk.Button(frame, text="?", command=frequency_tooltip.show_tooltip, width=3)
     frequency_question_button.grid(row=3, column=2, padx=5)
@@ -604,15 +707,18 @@ def create_hud_frame():
     frequency_question_button.bind("<Leave>", lambda event, tooltip=frequency_tooltip: tooltip.hide_tooltip())
 
     # Informationsrelevanz auswählen
-    label_relevance = tk.Label(frame, text="Informationsrelevanz für HUD auswählen:", bg="white")
+    label_relevance = tk.Label(frame, text="Information relevance: ", bg="white", font=('Helvetica', 11))
     label_relevance.grid(row=4, column=0, pady=5, padx=10, sticky='w')
     
     relevance_var = tk.StringVar(frame)
     relevance_var.set(information_relevance[1])
-    relevance_menu = tk.OptionMenu(frame, relevance_var, *information_relevance)
-    relevance_menu.grid(row=4, column=1, pady=5, padx=10, sticky='w')
+    relevance_menu = ttk.Combobox(frame, textvariable=relevance_var, values=information_relevance, state="readonly", font=('Helvetica', 11))
+    relevance_menu.current(1)  # Setzt standardmäßig den ersten verfügbaren Wert
+    relevance_menu.grid(row=4, column=1, pady=5, padx=10, sticky='ew')
 
-    relevance_tooltip = ToolTip(relevance_menu, "Informationsrelevanz des HUDs.")
+    relevance_menu.bind('<<ComboboxSelected>>', on_selection)
+
+    relevance_tooltip = ToolTip(relevance_menu, "Unimportant: HUD presents important information and information about your media, the weather,...\nImportant: HUD presents only information that is needed like current speed and navigation instructions.")
     
     relevance_question_button = tk.Button(frame, text="?", command=relevance_tooltip.show_tooltip, width=3)
     relevance_question_button.grid(row=4, column=2, padx=5)
@@ -620,15 +726,18 @@ def create_hud_frame():
     relevance_question_button.bind("<Leave>", lambda event, tooltip=relevance_tooltip: tooltip.hide_tooltip())
 
     # Field of View (FoV) auswählen
-    label_fov = tk.Label(frame, text="Field of View für HUD auswählen:", bg="white")
+    label_fov = tk.Label(frame, text="Field of View: ", bg="white", font=('Helvetica', 11))
     label_fov.grid(row=5, column=0, pady=5, padx=10, sticky='w')
     
     fov_var = tk.StringVar(frame)
     fov_var.set(fov[1])
-    fov_menu = tk.OptionMenu(frame, fov_var, *fov)
-    fov_menu.grid(row=5, column=1, pady=5, padx=10, sticky='w')
+    fov_menu = ttk.Combobox(frame, textvariable=fov_var, values=fov, state="readonly", font=('Helvetica', 11))
+    fov_menu.current(1)  # Setzt standardmäßig den ersten verfügbaren Wert
+    fov_menu.grid(row=5, column=1, pady=5, padx=10, sticky='ew')
 
-    fov_tooltip = ToolTip(fov_menu, "FoV des HUDs.")
+    fov_menu.bind('<<ComboboxSelected>>', on_selection)
+
+    fov_tooltip = ToolTip(fov_menu, "Small: Information is displayed directly above steering wheel.\nLarge: Information is displayed on whole windshield.")
     
     fov_question_button = tk.Button(frame, text="?", command=fov_tooltip.show_tooltip, width=3)
     fov_question_button.grid(row=5, column=2, padx=5)
@@ -636,17 +745,19 @@ def create_hud_frame():
     fov_question_button.bind("<Leave>", lambda event, tooltip=fov_tooltip: tooltip.hide_tooltip())
 
     # Dropdown für Fahrzeugtyp auswählen
-    label_vehicle_type = tk.Label(frame, text="Fahrzeugtyp auswählen:", bg="white")
+    label_vehicle_type = tk.Label(frame, text="Fahrzeugtyp auswählen:", bg="white", font=('Helvetica', 11))
     label_vehicle_type.grid(row=6, column=0, pady=5, padx=10, sticky='w')
-    
+
+    # Berechne die maximale Breite für die Fahrzeugtyp-Optionen
+    max_width = max(len(option) for option in available_vehicle_types) + 2  # +2 für etwas Puffer
     vehicle_type = tk.StringVar(frame)
-    vehicle_type_menu = ttk.Combobox(frame, textvariable=vehicle_type, values=available_vehicle_types, state="readonly", postcommand=lambda: dropdown_opened(vehicle_type_menu))
+    vehicle_type_menu = ttk.Combobox(frame, textvariable=vehicle_type, values=available_vehicle_types, state="readonly", font=('Helvetica', 11))
     vehicle_type_menu.current(0)  # Setzt standardmäßig den ersten verfügbaren Wert
-    vehicle_type_menu.grid(row=6, column=1, pady=5, padx=10, sticky='w')
+    vehicle_type_menu.config(width=max_width)  # Setze die Breite basierend auf der längsten Option
+    vehicle_type_menu.grid(row=6, column=1, pady=5, padx=10, sticky='ew')
 
     vehicle_type_menu.bind('<<ComboboxSelected>>', on_selection)
     
-
     # Speichere das neue Objekt und den initialen Wert (leer)
     objects.append((label_vehicle_type, vehicle_type_menu, vehicle_type.get()))
 
@@ -664,16 +775,16 @@ def create_hud_frame():
     }
 
     # Button zum Entfernen des HUDs
-    remove_button = tk.Button(frame, text="HUD entfernen", command=lambda: remove_hud(hud.get("hud_id")), bg="#ff6347", fg="white")
+    remove_button = tk.Button(frame, text="HUD entfernen", command=lambda: remove_hud(hud.get("hud_id")), bg="#ff6347", fg="white", width=15, font=('Helvetica', 12))  # Schriftgröße anpassen
     remove_button.grid(row=7, column=0, columnspan=3, pady=10)
 
     # Rückgabe des HUDs als Objekt zur Verwaltung
     return hud
 
+
 objects=[]
 
 def dropdown_opened(dropdown):
-    print("Das Dropdown-Menü wurde geöffnet!")
     dropdown['values'] = available_vehicle_types  # Aktualisiere die Werte des Dropdown-Menüs
 
 def getList():
@@ -688,8 +799,8 @@ class ToolTip:
 
     def show_tooltip(self, event=None):
         x, y, _, _ = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 25
+        x += self.widget.winfo_rootx() + 250
+        y += self.widget.winfo_rooty() + 20
 
         # Erstellt das Tooltip-Fenster, wenn noch nicht vorhanden
         if self.tooltip_window:
@@ -707,6 +818,8 @@ class ToolTip:
         if self.tooltip_window:
             self.tooltip_window.destroy()
             self.tooltip_window = None
+
+
 # Funktion zur Aktualisierung der Scrollregion des Canvas
 def update_scrollregion():
     canvas.update_idletasks()
@@ -737,7 +850,7 @@ root.title("SUMO Simulation Launcher")
 
 # Fenstergröße und Position festlegen
 window_width = 800
-window_height = 600
+window_height = 800
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 x_coordinate = (screen_width - window_width) // 2
@@ -752,51 +865,274 @@ notebook.pack(expand=True, fill="both")
 main_tab = ttk.Frame(notebook)
 notebook.add(main_tab, text="Main")
 
+#°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°#
+#--------------------HELP PAGE------------------------#
+#°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°#
+
 # Erstellen des Hilfe Tabs
 help_tab = ttk.Frame(notebook)
 notebook.add(help_tab, text="Help")
 
-help_text = tk.Label(help_tab, text="This is the help tab. Here you can find explanations for the different HUD variables.", font=("Arial", 12), justify="left")
-help_text.pack(pady=10, padx=10)
+# Hintergrundfarbe für den Canvas und Scrollbar hinzufügen
+canvas = tk.Canvas(help_tab, bg="#f0f0f0")
+scrollbar = tk.Scrollbar(help_tab, orient="vertical", command=canvas.yview)
 
-# ---- Überschrift auf dem Hilfe-Tab ----
-header_label = tk.Label(help_tab, text="Brightness", font=("Arial", 14, "bold"), justify="center")
-header_label.pack(pady=10)
+# Scrollable Frame erstellen
+scrollable_frame = tk.Frame(canvas, bg="#f0f0f0")
+
+# Canvas Konfigurationen
+canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+canvas.configure(yscrollcommand=scrollbar.set)
+
+# Binden des Mausrads für das Scrollen
+def on_mouse_wheel(event):
+    canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+# Binde das Scrollen des Mausrads an den Canvas
+canvas.bind("<MouseWheel>", on_mouse_wheel)
+
+# Canvas und Scrollbar packen
+canvas.pack(side="left", fill="both", expand=True)
+scrollbar.pack(side="right", fill="y")
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Hotkeys for the CARLA Spectator Client", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=5, padx=20, anchor="w")
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Here are some hotkeys that you can use to navigate in the CARLA Spectator Client. This won't \n"
+                        "work in the CARLA server.\n \n Hotkeys: \n   -q = quit: terminate the spectator client \n   -n = next: Switch to the next vehicle \n"
+                        "   -o = overlay: toggle the overlay that shows the name of the HUD and the car \n    (does not toggle the configured HUD!)", font=("Arial", 12), justify="left")
+header_label.pack(pady=5, padx=20, anchor="w")
+
+# Leerzeile
+empty_label = tk.Label(scrollable_frame, text="")
+empty_label.pack(pady=5, padx=20, anchor="w")  # Abstand nach der Leerzeile
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Setting a HUD for simulation", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=5, padx=20, anchor="w")
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Probability", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=5, padx=20, anchor="w")
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="You can use the probability field to change the probability of the specific HUD getting simulated in the \n simulation."
+                        "The probability is set in fractions, not percentage! Please make sure to enter an Integer > 0.", font=("Arial", 12), justify="left")
+header_label.pack(pady=10, padx=20, anchor="w")
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Brightness", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=10, padx=20, anchor="w")
 
 # ---- Weiterer Text auf dem Hilfe-Tab ----
-description_label = tk.Label(help_tab, text=(
+description_label = tk.Label(scrollable_frame, text=(
     "The brightness level represents how visible the HUD will be for the driver. \n" 
-    "While the option 'very dark' will make the HUD extremly visible, \n"
-    "the option 'very bright' makes the HUD almost see-through."
+    "The options are: \n"
+    "   - very dark \n"
+    "   - dark \n"
+    "   - average \n"
+    "   - bright \n"
+    "   - very bright \n"
+    "While the option 'very dark' will make the HUD extremely visible, the option 'very bright' makes the \n HUD almost see-through."
 ), font=("Arial", 12), justify="left")
-description_label.pack(pady=10, padx=10)
+description_label.pack(pady=10, padx=20, anchor="w")
 
 # Bilder laden und anpassen
-image1 = Image.open("7498864.png")
-image1 = image1.resize((200, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image1 = Image.open("screenshots\\hud-brightness-very-bright.png")
+image1 = image1.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
 image1_tk = ImageTk.PhotoImage(image1)
 
-image2 = Image.open("7498864.png")
-image2 = image2.resize((200, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image2 = Image.open("screenshots\\hud-brightness-very-dark.png")
+image2 = image2.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
 image2_tk = ImageTk.PhotoImage(image2)
 
 # Frame für die Bilder und Beschreibungen erstellen
-frame = tk.Frame(help_tab)
-frame.pack(pady=20)
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
 
-# Bild 1 und Bildbeschreibung hinzufügen
-label_image1 = tk.Label(frame, image=image1_tk)
-label_image1.grid(row=0, column=0, padx=10)
+# Frame für Bild 1 und Beschreibung
+frame1 = tk.Frame(image_frame)
+frame1.pack(side="left", padx=20)
 
-label_desc1 = tk.Label(frame, text="Brightness level: 'Very dark'")
-label_desc1.grid(row=1, column=0, padx=10, pady=5)
+# Bild 1 und Beschreibung in frame1
+label_image1 = tk.Label(frame1, image=image1_tk)
+label_image1.pack(pady=10)
 
-# Bild 2 und Bildbeschreibung hinzufügen
-label_image2 = tk.Label(frame, image=image2_tk)
-label_image2.grid(row=0, column=1, padx=10)
+label_desc1 = tk.Label(frame1, text="Brightness level: 'very bright'", font=("Arial", 12))
+label_desc1.pack(pady=10)
 
-label_desc2 = tk.Label(frame, text="Brightness level: 'Very bright'")
-label_desc2.grid(row=1, column=1, padx=10, pady=5)
+# Frame für Bild 2 und Beschreibung
+frame2 = tk.Frame(image_frame)
+frame2.pack(side="left", padx=20)
+
+# Bild 2 und Beschreibung in frame2
+label_image2 = tk.Label(frame2, image=image2_tk)
+label_image2.pack(pady=5)
+
+label_desc2 = tk.Label(frame2, text="Brightness level: 'very dark'", font=("Arial", 12))
+label_desc2.pack(pady=10)
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Field of View", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=10, padx=20, anchor="w")
+
+# ---- Weiterer Text auf dem Hilfe-Tab ----
+description_label = tk.Label(scrollable_frame, text=(
+    "The Field of View (FoV) defines the position of the information on the windshield.\n" 
+    "The options are: \n"
+    "   - small \n"
+    "   - medium \n"
+    "   - large \n"
+    "A large FoV projects elements directly in the driving environment exploiting the size of the whole \n simulated windshield while a small FoV means that items are placed above the steering \n wheel with a fixed location and less space for information presentation."
+), font=("Arial", 12), justify="left")
+description_label.pack(pady=10, padx=20, anchor="w")
+
+# Bilder laden und anpassen
+image12 = Image.open("screenshots\\hud-fov-small.png")
+image12 = image12.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image12_tk = ImageTk.PhotoImage(image12)
+
+image22 = Image.open("screenshots\\hud-fov-large.png")
+image22 = image22.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image22_tk = ImageTk.PhotoImage(image22)
+
+# Frame für die Bilder und Beschreibungen erstellen
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
+
+# Frame für Bild 1 und Beschreibung
+frame12 = tk.Frame(image_frame)
+frame12.pack(side="left", padx=20)
+
+# Bild 1 und Beschreibung in frame1
+label_image12 = tk.Label(frame12, image=image12_tk)
+label_image12.pack(pady=10)
+
+label_desc12 = tk.Label(frame12, text="FoV: 'small'", font=("Arial", 12))
+label_desc12.pack(pady=10)
+
+# Frame für Bild 2 und Beschreibung
+frame22 = tk.Frame(image_frame)
+frame22.pack(side="left", padx=20)
+
+# Bild 2 und Beschreibung in frame2
+label_image22 = tk.Label(frame22, image=image22_tk)
+label_image22.pack(pady=5)
+
+label_desc22 = tk.Label(frame22, text="FoV: 'large'", font=("Arial", 12))
+label_desc22.pack(pady=10)
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Information relevance", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=10, padx=20, anchor="w")
+
+# ---- Weiterer Text auf dem Hilfe-Tab ----
+description_label = tk.Label(scrollable_frame, text=(
+    "The information relevance describes the average relevance level of the \n information that is being displayed." 
+    "The options are: \n"
+    "   - unimportant \n"
+    "   - neutral \n"
+    "   - important \n"
+    "'important' means that only important information like the speed of the driver, the speed limit and navigation \n instruction will be displayed on the HUD while 'unimportant' will also represent \n information about your music player or the temperature outside "
+), font=("Arial", 12), justify="left")
+description_label.pack(pady=10, padx=20, anchor="w")
+
+# Bilder laden und anpassen
+image13 = Image.open("screenshots\\hud-relevance-unimportant.png")
+image13 = image13.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image13_tk = ImageTk.PhotoImage(image13)
+
+image23 = Image.open("screenshots\\hud-relevance-important.png")
+image23 = image23.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image23_tk = ImageTk.PhotoImage(image23)
+
+# Frame für die Bilder und Beschreibungen erstellen
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
+
+# Frame für Bild 1 und Beschreibung
+frame13 = tk.Frame(image_frame)
+frame13.pack(side="left", padx=20)
+
+# Bild 1 und Beschreibung in frame1
+label_image13 = tk.Label(frame13, image=image13_tk)
+label_image13.pack(pady=10)
+
+label_desc13 = tk.Label(frame13, text="Information relevance: 'unimportant'", font=("Arial", 12))
+label_desc13.pack(pady=10)
+
+# Frame für Bild 2 und Beschreibung
+frame23 = tk.Frame(image_frame)
+frame23.pack(side="left", padx=20)
+
+# Bild 2 und Beschreibung in frame2
+label_image23 = tk.Label(frame23, image=image23_tk)
+label_image23.pack(pady=5)
+
+label_desc23 = tk.Label(frame23, text="Information relevance: 'important'", font=("Arial", 12))
+label_desc23.pack(pady=10)
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Information frequency", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=10, padx=20, anchor="w")
+
+# ---- Weiterer Text auf dem Hilfe-Tab ----
+description_label = tk.Label(scrollable_frame, text=(
+    "The information frequency describes when the information is displayed on the windshield. \n" 
+    "The options are: \n"
+    "   - minimum \n"
+    "   - average \n"
+    "   - maximum \n"
+    "'minimum' means the information is only being displayed when needed to 'maximum' means all \n available information is always displayed."
+), font=("Arial", 12), justify="left")
+description_label.pack(pady=10, padx=20, anchor="w")
+
+# Bilder laden und anpassen
+image14 = Image.open("screenshots\\hud-all-min.png")
+image14 = image14.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image14_tk = ImageTk.PhotoImage(image14)
+
+image24 = Image.open("screenshots\\hud-all-max.png")
+image24 = image24.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image24_tk = ImageTk.PhotoImage(image24)
+
+# Frame für die Bilder und Beschreibungen erstellen
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
+
+# Frame für Bild 1 und Beschreibung
+frame14 = tk.Frame(image_frame)
+frame14.pack(side="left", padx=20)
+
+# Bild 1 und Beschreibung in frame1
+label_image14 = tk.Label(frame14, image=image14_tk)
+label_image14.pack(pady=10)
+
+label_desc14 = tk.Label(frame14, text="Information frequency: 'minimum'", font=("Arial", 12))
+label_desc14.pack(pady=10)
+
+# Frame für Bild 2 und Beschreibung
+frame24 = tk.Frame(image_frame)
+frame24.pack(side="left", padx=20)
+
+# Bild 2 und Beschreibung in frame2
+label_image24 = tk.Label(frame24, image=image24_tk)
+label_image24.pack(pady=5)
+
+label_desc24 = tk.Label(frame24, text="Information frequency: 'maximum'", font=("Arial", 12))
+label_desc24.pack(pady=10)
+
+
+# Aktualisiere die Scrollregion des Canvas
+scrollable_frame.update_idletasks()  # Stelle sicher, dass alle Aufgaben abgeschlossen sind
+canvas.configure(scrollregion=canvas.bbox("all"))  # Setze die Scrollregion nach dem Hinzufügen von Inhalten
+
+
+#°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°#
+#---------------MAIN PAGE--------------------#
+#°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°#
 
 # Variable für den Status der Checkbox
 simulate_var = tk.BooleanVar()
@@ -807,28 +1143,34 @@ hudless_var = tk.BooleanVar()
 hudless_var.set(False)
 
 # Label für die Auswahl der Map
-map_label = tk.Label(main_tab, text="Wähle eine Map:")
-map_label.pack(pady=10)
+map_label = tk.Label(main_tab, text="Wähle eine Map:", font=('Helvetica', 14, 'bold'))
+map_label.pack(pady=5)
 
 # Listbox für die Auswahl der Map
-map_list = tk.Listbox(main_tab)
+map_list = tk.Listbox(main_tab, font=('Helvetica', 12), height=5, width=10)
 for map_name in maps:
     map_list.insert(tk.END, map_name)
-map_list.pack()
+
+# Standardmäßig die erste Map auswählen
+if maps:  # Überprüfen, ob die Liste nicht leer ist
+    map_list.select_set(0)  # Die erste Map auswählen
+
+map_list.pack(pady=10)
 
 # Binde das Auswahlereignis, um die Map zu speichern
 map_list.bind('<<ListboxSelect>>', on_map_select)
 
+
 # Checkbox für die Simulation
-simulate_checkbox = tk.Checkbutton(main_tab, text="Co-Simulation mit Carla starten", variable=simulate_var)
+simulate_checkbox = tk.Checkbutton(main_tab, text="Start co-Simulation with CARLA", variable=simulate_var, font=('Helvetica', 12))
 simulate_checkbox.pack()
 
 # Checkbox für den spectator
-spectator_checkbox = tk.Checkbutton(main_tab, text="first person spectator starten", variable=spectate_var)
+spectator_checkbox = tk.Checkbutton(main_tab, text="Start the CARLA first-person spectator client", variable=spectate_var, font=('Helvetica', 12))
 spectator_checkbox.pack()
 
 # Checkbox für den spectator
-hudless_checkbox = tk.Checkbutton(main_tab, text="Simulate a car without HUD", variable=hudless_var)
+hudless_checkbox = tk.Checkbutton(main_tab, text="Simulate a car without HUD", variable=hudless_var, font=('Helvetica', 12))
 hudless_checkbox.pack()
 
 # Hintergrundfarbe für den Canvas und Scrollbar hinzufügen
@@ -862,15 +1204,18 @@ button_frame = tk.Frame(main_tab, bg="#f0f0f0")
 button_frame.pack(pady=10)
 
 # Buttons erstellen und einfügen
-add_hud_button = tk.Button(button_frame, text="HUD hinzufügen", command=add_hud, bg="#4682b4", fg="white")
-add_hud_button.pack(side="left", padx=20)
+button_width = 20  # Breite der Buttons festlegen
+button_height = 2  # Höhe der Buttons festlegen
 
-start_button = tk.Button(main_tab, text="Simulation starten", command=start_simulation, bg="#32cd32", fg="white")
-start_button.pack(pady=10)
+# Buttons erstellen und einfügen
+add_hud_button = tk.Button(button_frame, text="Add HUD", command=add_hud, bg="#4682b4", fg="white", width=button_width, height=button_height, font=('Helvetica', 10))
+add_hud_button.pack(pady=10)  # Packe den Button mit Abstand nach oben
 
-close_button = tk.Button(main_tab, text="Schließen", command=close_window, bg="#a9a9a9", fg="white")
-close_button.pack(pady=10)
+start_button = tk.Button(button_frame, text="Start simulation", command=start_simulation, bg="#32cd32", fg="white", width=button_width, height=button_height, font=('Helvetica', 10))
+start_button.pack(pady=10)  # Packe den Button mit Abstand nach oben
 
+close_button = tk.Button(button_frame, text="Close", command=close_window, bg="#a9a9a9", fg="white", width=button_width, height=button_height, font=('Helvetica', 10))
+close_button.pack(pady=10, padx=10) 
 # unbind scrolling over the combobox so that we don't scroll through options (optional)
 scrollable_frame.unbind_class("TCombobox", "<MouseWheel>")
 
