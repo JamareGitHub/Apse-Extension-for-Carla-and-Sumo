@@ -263,6 +263,7 @@ def start_simulation():
     
     if hudless_var.get() == False and len(hud_frames) == 0:
         messagebox.showwarning("No simulation data", "Please allow simulation without HUD or create HUDs to simulate.")
+        return
 
     selected_index = map_list.curselection()
 
@@ -612,6 +613,12 @@ def create_hud_frame():
     probability_entry.insert(0, "1")  # Set initial value to 1
     probability_entry.grid(row=1, column=1, pady=5, padx=10, sticky='ew')
 
+    # Register the validation function
+    validate_command = frame.register(lambda value: on_validate_input(value, probability_entry))
+    probability_entry.config(validate="key", validatecommand=(validate_command, "%P"))
+    probability_entry.insert(0, "1")  # Set initial value to 1
+    probability_entry.grid(row=1, column=1, pady=5, padx=10, sticky='w')
+
     # Tooltip für Wahrscheinlichkeit
     prob_tooltip = ToolTip(probability_entry, "Probability is set in fractions. Please only use integers > 0.")
 
@@ -752,8 +759,8 @@ class ToolTip:
 
     def show_tooltip(self, event=None):
         x, y, _, _ = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 25
+        x += self.widget.winfo_rootx() + 250
+        y += self.widget.winfo_rooty() + 20
 
         # Erstellt das Tooltip-Fenster, wenn noch nicht vorhanden
         if self.tooltip_window:
@@ -771,6 +778,8 @@ class ToolTip:
         if self.tooltip_window:
             self.tooltip_window.destroy()
             self.tooltip_window = None
+
+
 # Funktion zur Aktualisierung der Scrollregion des Canvas
 def update_scrollregion():
     canvas.update_idletasks()
@@ -846,13 +855,27 @@ canvas.bind("<MouseWheel>", on_mouse_wheel)
 canvas.pack(side="left", fill="both", expand=True)
 scrollbar.pack(side="right", fill="y")
 
-# Hilfetext
-help_text = tk.Label(scrollable_frame, text="This is the help tab. Here you can find explanations for the different HUD variables.", font=("Arial", 12), justify="left")
-help_text.pack(pady=10, padx=100, anchor="w") 
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Hotkeys for the CARLA Spectator Client", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=5, padx=20, anchor="w")
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Here are some hotkeys that you can use to navigate in the CARLA Spectator Client. This won't \n"
+                        "work in the CARLA server.\n \n Hotkeys: \n   -q = quit: terminate the spectator client \n   -n = next: Switch to the next vehicle \n"
+                        "   -o = overlay: toggle the overlay that shows the name of the HUD and the car \n    (does not toggle the configured HUD!)", font=("Arial", 12), justify="left")
+header_label.pack(pady=5, padx=20, anchor="w")
+
+# Leerzeile
+empty_label = tk.Label(scrollable_frame, text="")
+empty_label.pack(pady=5, padx=20, anchor="w")  # Abstand nach der Leerzeile
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Setting a HUD for simulation", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=5, padx=20, anchor="w")
 
 # Überschrift auf dem Hilfe-Tab
 header_label = tk.Label(scrollable_frame, text="Probability", font=("Arial", 14, "bold"), justify="left")
-header_label.pack(pady=10, padx=20, anchor="w")
+header_label.pack(pady=5, padx=20, anchor="w")
 
 # Überschrift auf dem Hilfe-Tab
 header_label = tk.Label(scrollable_frame, text="You can use the probability field to change the probability of the specific HUD getting simulated in the \n simulation."
@@ -967,7 +990,7 @@ header_label.pack(pady=10, padx=20, anchor="w")
 
 # ---- Weiterer Text auf dem Hilfe-Tab ----
 description_label = tk.Label(scrollable_frame, text=(
-    "The information relevance describes the averafe relevance level of the \n information that is being displayed." 
+    "The information relevance describes the average relevance level of the \n information that is being displayed." 
     "The options are: \n"
     "   - unimportant \n"
     "   - neutral \n"
@@ -1087,10 +1110,16 @@ map_label.pack(pady=5)
 map_list = tk.Listbox(main_tab, font=('Helvetica', 12), height=5, width=10)
 for map_name in maps:
     map_list.insert(tk.END, map_name)
+
+# Standardmäßig die erste Map auswählen
+if maps:  # Überprüfen, ob die Liste nicht leer ist
+    map_list.select_set(0)  # Die erste Map auswählen
+
 map_list.pack(pady=10)
 
 # Binde das Auswahlereignis, um die Map zu speichern
 map_list.bind('<<ListboxSelect>>', on_map_select)
+
 
 # Checkbox für die Simulation
 simulate_checkbox = tk.Checkbutton(main_tab, text="Start co-Simulation with CARLA", variable=simulate_var, font=('Helvetica', 12))
