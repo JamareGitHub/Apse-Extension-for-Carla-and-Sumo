@@ -13,7 +13,6 @@ from PIL import Image, ImageTk
 import traci
 import csv
 
-
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
 import config
 carla_base_dir = config.carla_base_dir
@@ -37,6 +36,9 @@ fov = ["small", "medium", "large"]
 
 hud_count = 0
 
+# Dictionary to store HUD attributes
+hud_data = {}
+
 # Globale Liste der verfügbaren Fahrzeugtypen
 available_vehicle_types = [
     "vehicle.audi.a2", "vehicle.audi.tt",
@@ -56,15 +58,17 @@ all_vehicle_types = [
 vtypes_xml_path = carla_base_dir+r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml"
 
 base_frame = {
-        'header': "header_entry",
-        'entry': 0.5,
+        'header': "Hudless Car",
+        'entry': 5,
         'brightness_var': "none",
         'frequency_var': "none",
         'relevance_var': "none",
         'fov_var': "none",
-        'vehicle_type': "",
-        'hud_id': 999  # Eindeutige ID für das HUD
+        'vehicle_type': "vehicle.nissan.patrol",
+        'hud_id': "999"  # Eindeutige ID für das HUD
     }
+
+hud_id_mapping = {}
 
 def are_all_fields_valid():
     """Überprüft, ob alle Eingabefelder korrekt ausgefüllt sind."""
@@ -84,8 +88,10 @@ def are_all_fields_valid():
 
     return all_valid
 
-def run_simulation():
-    traci.start(["sumo", "-c", r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor\Co-Simulation\Sumo\examples\Town01.sumocfg"])
+def run_simulation(map):
+    path = os.path.join(sumo_base_dir, "examples", map + ".sumocfg")
+    #traci.start(["sumo", "-c", r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor\Co-Simulation\Sumo\examples\Town01.sumocfg"])
+    traci.start(["sumo", "-c", path])
     
     simulation_data = []  # Liste zur Speicherung der Simulationsdaten
 
@@ -96,10 +102,13 @@ def run_simulation():
             current_min_gap = traci.vehicle.getMinGap(vehicle_id)
             current_speed = traci.vehicle.getSpeed(vehicle_id)
             position = traci.vehicle.getPosition(vehicle_id)  # Hole die Position des Fahrzeugs
-            vehicle_type = traci.vehicle.getVehicleClass(vehicle_id) 
+            #vehicle_type = traci.vehicle.getVehicleClass(vehicle_id)
+            acceleration = traci.vehicle.getAcceleration(vehicle_id)
+            distance_traveled = traci.vehicle.getDistance(vehicle_id)
+            time_loss = traci.vehicle.getTimeLoss(vehicle_id)
 
             # Speichere die Daten in der Liste
-            simulation_data.append([vehicle_id, current_speed, current_min_gap, position[0], position[1], vehicle_type])
+            simulation_data.append([vehicle_id, current_speed, current_min_gap, position[0], position[1], acceleration, distance_traveled, time_loss])
             
             new_min_gap = max(1.0, current_speed * 0.5)  # Beispielwert
             traci.vehicle.setMinGap(vehicle_id, new_min_gap)
@@ -110,6 +119,8 @@ def run_simulation():
     # Speichere die gesammelten Simulationsdaten in eine CSV-Datei
     save_simulation_data(simulation_data)
 
+# Dictionary für jede Fahrzeug-ID, um den entsprechenden Fahrzeugtyp zu speichern
+vehicle_type_mapping = {}
 
 def save_simulation_data(simulation_data):
     # Überprüfe, ob die Daten die erwartete Struktur haben
@@ -122,33 +133,109 @@ def save_simulation_data(simulation_data):
 
     # Schreibe die Daten in die CSV
     with open(csv_filename, mode='w', newline='') as file:
-        fieldnames = ['vehicle_id', 'current_speed', 'current_min_gap', 'position_x', 'position_y', 'vehicle_type']
+        fieldnames = ['vehicle_id',
+                    'hud_id',
+                    'vehicle_type',
+                    'position_x',
+                    'position_y',
+                    'current_speed',
+                    'current_min_gap',
+                    'acceleration',
+                    'distance_traveled',
+                    'time_loss',
+                    'maxSpeed',
+                    'speedFactor',
+                    'reactionTime',
+                    'fatiguenessLevel',
+                    'awarenessLevel',
+                    'brightnessLevel']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
 
         for entry in simulation_data:
             # Überprüfe, ob entry eine Liste ist und die erwartete Länge hat
-            if isinstance(entry, list) and len(entry) == 6:
+            if isinstance(entry, list):
                 vehicle_id = entry[0]                # Zugreifen auf das erste Element
                 current_speed = entry[1]             # Zugreifen auf das zweite Element
                 current_min_gap = entry[2]           # Zugreifen auf das dritte Element
                 position_x = entry[3]                # Zugreifen auf das vierte Element
                 position_y = entry[4]                # Zugreifen auf das fünfte Element
+                acceleration = entry[5]
+                distance_traveled = entry[6]
+                time_loss = entry[7]
 
+                # Hole den vehicle_type basierend auf der vehicle_id aus dem Mapping
                 vehicle_type = vehicle_type_mapping.get(vehicle_id, "unknown")
+                
+                # Hole die hud_id basierend auf dem Fahrzeugtyp
+                hud_id = hud_id_mapping.get(vehicle_type, "unknown")
+
+                # Hole die HUD-Daten basierend auf dem vehicle_type
+                hud_data_for_type = hud_data.get(vehicle_type, {})
+
+                # Hole die spezifischen Werte aus dem HUD-Datensatz
+                max_speed = hud_data_for_type.get('max_speed', 'N/A')
+                speedFactor = hud_data_for_type.get('speed_factor', 'N/A')
+                reactionTime = hud_data_for_type.get('reactTime', 'N/A')
+                fatiguenessLevel = hud_data_for_type.get('fatigueness_level', 'N/A')
+                awarenessLevel = hud_data_for_type.get('awareness_level', 'N/A')
+                brightnessLevel = hud_data_for_type.get('brightness', 'N/A')
                 
                 # Schreibe die Zeile in die CSV
                 writer.writerow({
                     'vehicle_id': vehicle_id,
-                    'current_speed': current_speed,
-                    'current_min_gap': current_min_gap,
+                    'hud_id': hud_id,
+                    'vehicle_type': vehicle_type,
                     'position_x': position_x,
                     'position_y': position_y,
-                    'vehicle_type': vehicle_type
+                    'current_speed': current_speed,
+                    'current_min_gap': current_min_gap,
+                    'acceleration': acceleration,
+                    'distance_traveled': distance_traveled,
+                    'time_loss': time_loss,
+                    'maxSpeed': max_speed,
+                    'speedFactor': speedFactor,
+                    'reactionTime': reactionTime,
+                    'fatiguenessLevel': fatiguenessLevel,
+                    'awarenessLevel': awarenessLevel,
+                    'brightnessLevel': brightnessLevel
                 })
 
     print("Daten erfolgreich gespeichert!")
 
+
+string_hud_frames = []
+
+def convert_hudFrames():
+
+    for hud in hud_frames:
+        # Neues Dictionary für die umgewandelten Werte
+        string_hud = {
+            'header': str(hud['header'].get()),
+            'entry': str(hud['entry'].get()),
+            'brightness_var': str(hud['brightness_var'].get()),
+            'frequency_var': str(hud['frequency_var'].get()),
+            'relevance_var': str(hud['relevance_var'].get()),
+            'fov_var': str(hud['fov_var'].get()),
+            'vehicle_type': str(hud['vehicle_type'].get()),
+            'hud_id': str(hud['hud_id'])
+        }
+    
+        # Füge das neue Dictionary zur Liste hinzu
+        string_hud_frames.append(string_hud)
+
+    print(string_hud_frames)
+
+def map_vehicle_type_to_hud_id():
+    for hud in string_hud_frames:
+        vehicle_type = hud['vehicle_type']  # Den Fahrzeugtyp des HUDs extrahieren
+        hud_id = hud['hud_id']  # Die hud_id extrahieren
+        
+        # Mapping von vehicle_type zu hud_id hinzufügen
+        hud_id_mapping[vehicle_type] = hud_id
+
+        # Optional: Debugging-Ausgabe, um sicherzustellen, dass das Mapping korrekt ist
+        print(f"Mapping vehicle_type {vehicle_type} to hud_id {hud_id}")
 
 def start_simulation():
     if not map_list.curselection():
@@ -168,23 +255,25 @@ def start_simulation():
 
     global hud_count
 
+    convert_hudFrames()
+
+    if hudless_var.get():
+        string_hud_frames.append(base_frame)
+        hud_id_mapping["vehicle.nissan.patrol"] = "999"
+        print("BASE CAR EXISTS!")
+
+    map_vehicle_type_to_hud_id()
+
     hud_data = hudSelection()
-        
-    print("Gespeicherte HUD-Daten:")
-    for vehicle_type in hud_data.items():
-        print(f"{vehicle_type}")
 
     # Update der maximalen Geschwindigkeiten
     update_max_speeds(carla_base_dir + r"\Co-Simulation\Sumo\examples\carlavtypes.rou.xml", hud_data)
-
-    if hudless_var.get():
-        print("BASE CAR EXISTS!")
 
     if selected_index:
         selected_map = map_list.get(selected_index[0])
         selected_sumocfg = maps[selected_map]
 
-        writeXML(hud_frames)
+        writeXML(string_hud_frames)
 
         # Erstelle die .rou.xml Datei für die Fahrzeuge
         modify_vehicle_routes(selected_map)
@@ -214,48 +303,34 @@ def start_simulation():
                 sync_command = ["sumo-gui", "-c", selected_sumocfg, "--start", "--tripinfo-output", "tripinfo.xml"]
                 subprocess.Popen(sync_command, cwd=os.path.dirname(sync_script))
 
+                if spectate_var.get():
+                    try:
+                        print("starting spectator")
+                        spectatorpath = "./spectator.py"
+                        spectatordir = os.path.dirname(spectatorpath)
+                        subprocess.Popen(["python", spectatorpath, spectatordir])
+                        print("started spectator")
+                    except FileNotFoundError as e:
+                        print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
+
+                run_simulation(selected_map)
+
             except FileNotFoundError as e:
                 print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
         else:
             start_sumo(selected_sumocfg)
-            run_simulation()
-
-
-        if spectate_var.get():
-            try:
-                print("starting spectator")
-                spectatorpath = "./spectator.py"
-                spectatordir = os.path.dirname(spectatorpath)
-                subprocess.Popen(["python", spectatorpath, spectatordir])
-                print("started spectator")
-            except FileNotFoundError as e:
-                print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
+            run_simulation(selected_map)
 
 def hudSelection():
     experience_level = 5
     age = 30
 
-    # Dictionary to store HUD attributes
-    hud_data = {}
-
-    if hudless_var.get():
-        hud_data["vehicle.nissan.patrol"] = {
-            'reactTime': 23,
-            'fatigueness_level': 1,
-            'awareness_level': 1,
-            'max_speed': 160,
-            "min_Gap": 5,
-            'vehicle_type': "vehicle.nissan.patrol",
-            'speed_factor': 1,
-            'brightness': "none"
-        }
-
-    for hud in hud_frames:
-        brightness_level = hud['brightness_var'].get()
-        information_frequency = hud['frequency_var'].get()
-        information_relevance = hud['relevance_var'].get()
-        fov_selection = hud['fov_var'].get()
-        vehicle_type = hud['vehicle_type'].get()
+    for hud in string_hud_frames:
+        brightness_level = hud['brightness_var']
+        information_frequency = hud['frequency_var']
+        information_relevance = hud['relevance_var']
+        fov_selection = hud['fov_var']
+        vehicle_type = hud['vehicle_type']
 
         distraction_level = calculations.calc_distraction(information_relevance, fov_selection, information_frequency, brightness_level)
         fatigueness_level = calculations.calc_fatigueness(information_relevance, fov_selection, information_frequency)
@@ -280,31 +355,16 @@ def hudSelection():
     return hud_data
 
 
-def writeXML(hud_frames):
+def writeXML(hud_list):
     root = ET.Element("Vehicles")
-
-    if hudless_var.get():
-        vehicle_type = "vehicle.nissan.patrol"
-        brightness = "none"
-        frequency = "none"
-        relevance = "none"
-        fov = "none"
-        hud_name = "No HUD"
-
-        vehicle_element = ET.SubElement(root, "Vehicle", type_id=vehicle_type)
-        ET.SubElement(vehicle_element, "HUDName").text = hud_name
-        ET.SubElement(vehicle_element, "Brightness").text = brightness
-        ET.SubElement(vehicle_element, "Frequency").text = frequency
-        ET.SubElement(vehicle_element, "Relevance").text = relevance
-        ET.SubElement(vehicle_element, "FoV").text = fov
-        
-    for hud in hud_frames:
-        vehicle_type = hud['vehicle_type'].get()
-        brightness = hud['brightness_var'].get()
-        frequency = hud['frequency_var'].get()
-        relevance = hud['relevance_var'].get()
-        fov = hud['fov_var'].get()
-        hud_name = hud['header'].get()
+  
+    for hud in hud_list:
+        vehicle_type = hud['vehicle_type']
+        brightness = hud['brightness_var']
+        frequency = hud['frequency_var']
+        relevance = hud['relevance_var']
+        fov = hud['fov_var']
+        hud_name = hud['header']
 
         vehicle_element = ET.SubElement(root, "Vehicle", type_id=vehicle_type)
         ET.SubElement(vehicle_element, "HUDName").text = hud_name
@@ -397,13 +457,9 @@ def modify_vehicle_routes(selected_map):
         vehicle_types = []
         probabilities = []
 
-        if hudless_var.get():
-            vehicle_types.append("vehicle.nissan.patrol")
-            probabilities.append(5)
-
-        for hud in hud_frames:
-            probability = int(hud['entry'].get())  # Wahrscheinlichkeit aus dem Eingabefeld
-            vehicle_type = hud['vehicle_type'].get()  # Ausgewählter Fahrzeugtyp
+        for hud in string_hud_frames:
+            probability = int(hud['entry'])  # Wahrscheinlichkeit aus dem Eingabefeld
+            vehicle_type = hud['vehicle_type']  # Ausgewählter Fahrzeugtyp
 
             vehicle_types.append(vehicle_type)
             probabilities.append(probability)
@@ -411,17 +467,28 @@ def modify_vehicle_routes(selected_map):
         # Fahrzeugtypen den Fahrzeugen in der Route zuweisen
         for vehicle in root.findall('vehicle'):
             if vehicle_types:
-                vehicle_type = random.choices(vehicle_types, probabilities)[0]  # Wählt basierend auf Wahrscheinlichkeiten aus
-                vehicle.set('type', vehicle_type)
-                # Fahrzeugtyp der Fahrzeug-ID zuweisen
                 vehicle_id = vehicle.get('id')
+
+                # Wählt basierend auf Wahrscheinlichkeiten einen Fahrzeugtyp aus
+                vehicle_type = random.choices(vehicle_types, probabilities)[0]  
+
+                # Fahrzeugtyp in der Route setzen
+                vehicle.set('type', vehicle_type)
+
+                # Fahrzeug-ID mit dem Fahrzeugtyp speichern
                 vehicle_type_mapping[vehicle_id] = vehicle_type
 
         # Änderungen in die Datei schreiben
         tree.write(original_routes_file)
 
+        # Ausgabe zur Überprüfung
+        print("Zugewiesene Fahrzeugtypen:")
+        for vehicle_id, vehicle_type in vehicle_type_mapping.items():
+            print(f"Fahrzeug-ID: {vehicle_id}, Fahrzeugtyp: {vehicle_type}")
+
     except FileNotFoundError:
         print(f"Datei {original_routes_file} nicht gefunden.")
+
 
 
 # Funktion zum Schließen des Hauptfensters
@@ -437,6 +504,7 @@ def add_hud():
     
     # Erstelle das HUD ohne Argument
     hud_frame = create_hud_frame()
+
     hud_frames.append(hud_frame)
 
     vehicle_type = hud_frame['vehicle_type'].get()

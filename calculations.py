@@ -2,9 +2,6 @@ import tkinter as tk
 import subprocess
 import xml.etree.ElementTree as ET
 from tkinter import filedialog, messagebox
-import os
-import random
-import time
 import xml.dom.minidom as minidom
 
 import math
