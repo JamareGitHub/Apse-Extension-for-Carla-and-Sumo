@@ -10,6 +10,7 @@
 2. clone this repository to a location of your choice.
 3. install python packages using pip ("pip install -r .\requirements.txt").
 4. Open "config.py" and setup your carla base path up to the folder "\WindowsNoEditor".
+5. Copy content of setup_files into the Carla folder (copy the WindowsNoEditor folder over the one from carla, merge/ overwrite if promted)
 
 ## Running the Software
 1. run main.py to access the GUI ("python main.py")

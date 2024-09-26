@@ -317,7 +317,7 @@ def start_simulation():
                 # Führe das Synchronisationsskript aus
                 sync_script = os.path.join(sumo_base_dir, "run_synchronization.py")
                 print("Starte Synchronisationsskript mit SUMO: {}".format(selected_sumocfg))
-                sync_command = ["sumo-gui", "-c", selected_sumocfg, "--start", "--tripinfo-output", "tripinfo.xml"]
+                sync_command = ["python", sync_script, selected_sumocfg, "--sumo-gui", "--sync-vehicle-color"]
                 subprocess.Popen(sync_command, cwd=os.path.dirname(sync_script))
                 
                 try:
