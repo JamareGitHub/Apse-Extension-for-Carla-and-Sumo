@@ -697,7 +697,7 @@ def create_hud_frame():
     # Berechne die maximale Breite für die Fahrzeugtyp-Optionen
     max_width = max(len(option) for option in available_vehicle_types) + 2  # +2 für etwas Puffer
     vehicle_type = tk.StringVar(frame)
-    vehicle_type_menu = ttk.Combobox(frame, textvariable=vehicle_type, values=available_vehicle_types, state="readonly")
+    vehicle_type_menu = ttk.Combobox(frame, textvariable=vehicle_type, values=available_vehicle_types, state="readonly", font=('Helvetica', 11))
     vehicle_type_menu.current(0)  # Setzt standardmäßig den ersten verfügbaren Wert
     vehicle_type_menu.config(width=max_width)  # Setze die Breite basierend auf der längsten Option
     vehicle_type_menu.grid(row=6, column=1, pady=5, padx=10, sticky='ew')
@@ -809,51 +809,260 @@ notebook.pack(expand=True, fill="both")
 main_tab = ttk.Frame(notebook)
 notebook.add(main_tab, text="Main")
 
+#°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°#
+#--------------------HELP PAGE------------------------#
+#°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°#
+
 # Erstellen des Hilfe Tabs
 help_tab = ttk.Frame(notebook)
 notebook.add(help_tab, text="Help")
 
-help_text = tk.Label(help_tab, text="This is the help tab. Here you can find explanations for the different HUD variables.", font=("Arial", 12), justify="left")
-help_text.pack(pady=10, padx=10)
+# Hintergrundfarbe für den Canvas und Scrollbar hinzufügen
+canvas = tk.Canvas(help_tab, bg="#f0f0f0")
+scrollbar = tk.Scrollbar(help_tab, orient="vertical", command=canvas.yview)
 
-# ---- Überschrift auf dem Hilfe-Tab ----
-header_label = tk.Label(help_tab, text="Brightness", font=("Arial", 14, "bold"), justify="center")
-header_label.pack(pady=10)
+# Scrollable Frame erstellen
+scrollable_frame = tk.Frame(canvas, bg="#f0f0f0")
+
+# Canvas Konfigurationen
+canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+canvas.configure(yscrollcommand=scrollbar.set)
+
+# Binden des Mausrads für das Scrollen
+def on_mouse_wheel(event):
+    canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+# Binde das Scrollen des Mausrads an den Canvas
+canvas.bind("<MouseWheel>", on_mouse_wheel)
+
+# Canvas und Scrollbar packen
+canvas.pack(side="left", fill="both", expand=True)
+scrollbar.pack(side="right", fill="y")
+
+# Hilfetext
+help_text = tk.Label(scrollable_frame, text="This is the help tab. Here you can find explanations for the different HUD variables.", font=("Arial", 12), justify="left")
+help_text.pack(pady=10, padx=100, anchor="w") 
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Probability", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=10, padx=20, anchor="w")
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="You can use the probability field to change the probability of the specific HUD getting simulated in the \n simulation."
+                        "The probability is set in fractions, not percentage! Please make sure to enter an Integer > 0.", font=("Arial", 12), justify="left")
+header_label.pack(pady=10, padx=20, anchor="w")
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Brightness", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=10, padx=20, anchor="w")
 
 # ---- Weiterer Text auf dem Hilfe-Tab ----
-description_label = tk.Label(help_tab, text=(
+description_label = tk.Label(scrollable_frame, text=(
     "The brightness level represents how visible the HUD will be for the driver. \n" 
-    "While the option 'very dark' will make the HUD extremly visible, \n"
-    "the option 'very bright' makes the HUD almost see-through."
+    "The options are: \n"
+    "   - very dark \n"
+    "   - dark \n"
+    "   - average \n"
+    "   - bright \n"
+    "   - very bright \n"
+    "While the option 'very dark' will make the HUD extremely visible, the option 'very bright' makes the \n HUD almost see-through."
 ), font=("Arial", 12), justify="left")
-description_label.pack(pady=10, padx=10)
+description_label.pack(pady=10, padx=20, anchor="w")
 
 # Bilder laden und anpassen
-image1 = Image.open("7498864.png")
-image1 = image1.resize((200, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image1 = Image.open("screenshots\\hud-brightness-very-bright.png")
+image1 = image1.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
 image1_tk = ImageTk.PhotoImage(image1)
 
-image2 = Image.open("7498864.png")
-image2 = image2.resize((200, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image2 = Image.open("screenshots\\hud-brightness-very-dark.png")
+image2 = image2.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
 image2_tk = ImageTk.PhotoImage(image2)
 
 # Frame für die Bilder und Beschreibungen erstellen
-frame = tk.Frame(help_tab)
-frame.pack(pady=20)
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
 
-# Bild 1 und Bildbeschreibung hinzufügen
-label_image1 = tk.Label(frame, image=image1_tk)
-label_image1.grid(row=0, column=0, padx=10)
+# Frame für Bild 1 und Beschreibung
+frame1 = tk.Frame(image_frame)
+frame1.pack(side="left", padx=20)
 
-label_desc1 = tk.Label(frame, text="Brightness level: 'Very dark'")
-label_desc1.grid(row=1, column=0, padx=10, pady=5)
+# Bild 1 und Beschreibung in frame1
+label_image1 = tk.Label(frame1, image=image1_tk)
+label_image1.pack(pady=10)
 
-# Bild 2 und Bildbeschreibung hinzufügen
-label_image2 = tk.Label(frame, image=image2_tk)
-label_image2.grid(row=0, column=1, padx=10)
+label_desc1 = tk.Label(frame1, text="Brightness level: 'very bright'", font=("Arial", 12))
+label_desc1.pack(pady=10)
 
-label_desc2 = tk.Label(frame, text="Brightness level: 'Very bright'")
-label_desc2.grid(row=1, column=1, padx=10, pady=5)
+# Frame für Bild 2 und Beschreibung
+frame2 = tk.Frame(image_frame)
+frame2.pack(side="left", padx=20)
+
+# Bild 2 und Beschreibung in frame2
+label_image2 = tk.Label(frame2, image=image2_tk)
+label_image2.pack(pady=5)
+
+label_desc2 = tk.Label(frame2, text="Brightness level: 'very dark'", font=("Arial", 12))
+label_desc2.pack(pady=10)
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Field of View", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=10, padx=20, anchor="w")
+
+# ---- Weiterer Text auf dem Hilfe-Tab ----
+description_label = tk.Label(scrollable_frame, text=(
+    "The Field of View (FoV) defines the position of the information on the windshield.\n" 
+    "The options are: \n"
+    "   - small \n"
+    "   - medium \n"
+    "   - large \n"
+    "A large FoV projects elements directly in the driving environment exploiting the size of the whole \n simulated windshield while a small FoV means that items are placed above the steering \n wheel with a fixed location and less space for information presentation."
+), font=("Arial", 12), justify="left")
+description_label.pack(pady=10, padx=20, anchor="w")
+
+# Bilder laden und anpassen
+image12 = Image.open("screenshots\\hud-fov-small.png")
+image12 = image12.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image12_tk = ImageTk.PhotoImage(image12)
+
+image22 = Image.open("screenshots\\hud-fov-large.png")
+image22 = image22.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image22_tk = ImageTk.PhotoImage(image22)
+
+# Frame für die Bilder und Beschreibungen erstellen
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
+
+# Frame für Bild 1 und Beschreibung
+frame12 = tk.Frame(image_frame)
+frame12.pack(side="left", padx=20)
+
+# Bild 1 und Beschreibung in frame1
+label_image12 = tk.Label(frame12, image=image12_tk)
+label_image12.pack(pady=10)
+
+label_desc12 = tk.Label(frame12, text="FoV: 'small'", font=("Arial", 12))
+label_desc12.pack(pady=10)
+
+# Frame für Bild 2 und Beschreibung
+frame22 = tk.Frame(image_frame)
+frame22.pack(side="left", padx=20)
+
+# Bild 2 und Beschreibung in frame2
+label_image22 = tk.Label(frame22, image=image22_tk)
+label_image22.pack(pady=5)
+
+label_desc22 = tk.Label(frame22, text="FoV: 'large'", font=("Arial", 12))
+label_desc22.pack(pady=10)
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Information relevance", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=10, padx=20, anchor="w")
+
+# ---- Weiterer Text auf dem Hilfe-Tab ----
+description_label = tk.Label(scrollable_frame, text=(
+    "The information relevance describes the averafe relevance level of the \n information that is being displayed." 
+    "The options are: \n"
+    "   - unimportant \n"
+    "   - neutral \n"
+    "   - important \n"
+    "'important' means that only important information like the speed of the driver, the speed limit and navigation \n instruction will be displayed on the HUD while 'unimportant' will also represent \n information about your music player or the temperature outside "
+), font=("Arial", 12), justify="left")
+description_label.pack(pady=10, padx=20, anchor="w")
+
+# Bilder laden und anpassen
+image13 = Image.open("screenshots\\hud-relevance-unimportant.png")
+image13 = image13.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image13_tk = ImageTk.PhotoImage(image13)
+
+image23 = Image.open("screenshots\\hud-relevance-important.png")
+image23 = image23.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image23_tk = ImageTk.PhotoImage(image23)
+
+# Frame für die Bilder und Beschreibungen erstellen
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
+
+# Frame für Bild 1 und Beschreibung
+frame13 = tk.Frame(image_frame)
+frame13.pack(side="left", padx=20)
+
+# Bild 1 und Beschreibung in frame1
+label_image13 = tk.Label(frame13, image=image13_tk)
+label_image13.pack(pady=10)
+
+label_desc13 = tk.Label(frame13, text="Information relevance: 'unimportant'", font=("Arial", 12))
+label_desc13.pack(pady=10)
+
+# Frame für Bild 2 und Beschreibung
+frame23 = tk.Frame(image_frame)
+frame23.pack(side="left", padx=20)
+
+# Bild 2 und Beschreibung in frame2
+label_image23 = tk.Label(frame23, image=image23_tk)
+label_image23.pack(pady=5)
+
+label_desc23 = tk.Label(frame23, text="Information relevance: 'important'", font=("Arial", 12))
+label_desc23.pack(pady=10)
+
+# Überschrift auf dem Hilfe-Tab
+header_label = tk.Label(scrollable_frame, text="Information frequency", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=10, padx=20, anchor="w")
+
+# ---- Weiterer Text auf dem Hilfe-Tab ----
+description_label = tk.Label(scrollable_frame, text=(
+    "The information frequency describes when the information is displayed on the windshield. \n" 
+    "The options are: \n"
+    "   - minimum \n"
+    "   - average \n"
+    "   - maximum \n"
+    "'minimum' means the information is only being displayed when needed to 'maximum' means all \n available information is always displayed."
+), font=("Arial", 12), justify="left")
+description_label.pack(pady=10, padx=20, anchor="w")
+
+# Bilder laden und anpassen
+image14 = Image.open("screenshots\\hud-all-min.png")
+image14 = image14.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image14_tk = ImageTk.PhotoImage(image14)
+
+image24 = Image.open("screenshots\\hud-all-max.png")
+image24 = image24.resize((340, 200), Image.Resampling.LANCZOS)  # Bildgröße anpassen
+image24_tk = ImageTk.PhotoImage(image24)
+
+# Frame für die Bilder und Beschreibungen erstellen
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
+
+# Frame für Bild 1 und Beschreibung
+frame14 = tk.Frame(image_frame)
+frame14.pack(side="left", padx=20)
+
+# Bild 1 und Beschreibung in frame1
+label_image14 = tk.Label(frame14, image=image14_tk)
+label_image14.pack(pady=10)
+
+label_desc14 = tk.Label(frame14, text="Information frequency: 'minimum'", font=("Arial", 12))
+label_desc14.pack(pady=10)
+
+# Frame für Bild 2 und Beschreibung
+frame24 = tk.Frame(image_frame)
+frame24.pack(side="left", padx=20)
+
+# Bild 2 und Beschreibung in frame2
+label_image24 = tk.Label(frame24, image=image24_tk)
+label_image24.pack(pady=5)
+
+label_desc24 = tk.Label(frame24, text="Information frequency: 'maximum'", font=("Arial", 12))
+label_desc24.pack(pady=10)
+
+
+# Aktualisiere die Scrollregion des Canvas
+scrollable_frame.update_idletasks()  # Stelle sicher, dass alle Aufgaben abgeschlossen sind
+canvas.configure(scrollregion=canvas.bbox("all"))  # Setze die Scrollregion nach dem Hinzufügen von Inhalten
+
+
+#°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°#
+#---------------MAIN PAGE--------------------#
+#°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°#
 
 # Variable für den Status der Checkbox
 simulate_var = tk.BooleanVar()
@@ -923,7 +1132,7 @@ button_width = 20  # Breite der Buttons festlegen
 button_height = 2  # Höhe der Buttons festlegen
 
 # Buttons erstellen und einfügen
-add_hud_button = tk.Button(button_frame, text="Add HUDD", command=add_hud, bg="#4682b4", fg="white", width=button_width, height=button_height, font=('Helvetica', 10))
+add_hud_button = tk.Button(button_frame, text="Add HUD", command=add_hud, bg="#4682b4", fg="white", width=button_width, height=button_height, font=('Helvetica', 10))
 add_hud_button.pack(pady=10)  # Packe den Button mit Abstand nach oben
 
 start_button = tk.Button(button_frame, text="Start simulation", command=start_simulation, bg="#32cd32", fg="white", width=button_width, height=button_height, font=('Helvetica', 10))
