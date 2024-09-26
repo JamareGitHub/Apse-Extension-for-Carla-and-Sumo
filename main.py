@@ -293,8 +293,48 @@ def start_simulation():
 
         # Erstelle die .rou.xml Datei für die Fahrzeuge
         modify_vehicle_routes(selected_map)
-    
-        if simulate_var.get():  # Wenn Checkbox angekreuzt ist
+
+        carla_exe = os.path.join(carla_base_dir, "CarlaUE4.exe")
+
+        if spectate_var.get() and simulate_var.get() == False:
+            print("TESTERS")
+
+            try: 
+                print("Starte CarlaUE4.exe im Off-Screen-Modus...")
+                subprocess.Popen([carla_exe, "-RenderOffScreen"])
+
+                # Warte ein paar Sekunden, damit CarlaUE4.exe gestartet werden kann
+                time.sleep(20)
+                print("Wartezeit nach dem Start von CarlaUE4.exe.")
+
+                # Führe das Konfigurationsskript aus
+                print("Starte Konfigurationsskript: {}".format(config_script))
+                config_command = ["python", config_script, "--map", selected_map]
+                configsubprocess = subprocess.Popen(config_command, cwd=os.path.dirname(config_script))
+                configsubprocess.wait()
+                print("Wartezeit vor dem Start des Synchronisationsskripts.")
+
+                # Führe das Synchronisationsskript aus
+                sync_script = os.path.join(sumo_base_dir, "run_synchronization.py")
+                print("Starte Synchronisationsskript mit SUMO: {}".format(selected_sumocfg))
+                sync_command = ["sumo-gui", "-c", selected_sumocfg, "--start", "--tripinfo-output", "tripinfo.xml"]
+                subprocess.Popen(sync_command, cwd=os.path.dirname(sync_script))
+                
+                try:
+                    print("starting spectator")
+                    spectatorpath = "./spectator.py"
+                    spectatordir = os.path.dirname(spectatorpath)
+                    subprocess.Popen(["python", spectatorpath, spectatordir])
+                    print("started spectator")
+                except FileNotFoundError as e:
+                    print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
+
+                run_simulation(selected_map)
+
+            except FileNotFoundError as e:
+                print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
+
+        elif simulate_var.get():
             carla_exe = os.path.join(carla_base_dir, "CarlaUE4.exe")
 
             try:
@@ -333,9 +373,11 @@ def start_simulation():
 
             except FileNotFoundError as e:
                 print("Eine der angegebenen Dateien wurde nicht gefunden:", e)
+
         else:
             start_sumo(selected_sumocfg)
             run_simulation(selected_map)
+
 
 def hudSelection():
     experience_level = 5
