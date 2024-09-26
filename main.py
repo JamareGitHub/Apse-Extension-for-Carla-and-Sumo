@@ -1160,9 +1160,6 @@ map_list = tk.Listbox(main_tab, font=('Helvetica', 12), height=5, width=10)
 for map_name in maps:
     map_list.insert(tk.END, map_name)
 
-# Standardmäßig die erste Map auswählen
-if maps:  # Überprüfen, ob die Liste nicht leer ist
-    map_list.select_set(0)  # Die erste Map auswählen
 
 map_list.pack(pady=10)
 

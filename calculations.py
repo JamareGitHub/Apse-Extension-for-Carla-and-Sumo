@@ -154,17 +154,23 @@ def calc_SpeedAd(information_frequency, fov, distraction_level, fatigueness_leve
 
 
 def calc_MaxSpeed(experience_level, awareness_level):
-    max_speed = 180 + 3 * experience_level + 2.5 * awareness_level  # Basiswert
-    return max(120, min(230, max_speed))  # Sicherstellen, dass der Wert zwischen 120 und 230 liegt
+    # Basiswert um 180, aber Streuung zwischen 140 und 220
+    base_speed = 180
+    experience_effect = random.uniform(-10, 10) * experience_level  # Zufällige Variation
+    awareness_effect = random.uniform(-5, 7) * awareness_level  # Weitere zufällige Variation
 
+    max_speed = base_speed + experience_effect + awareness_effect
+    return max(140, min(220, max_speed))  # Sicherstellen, dass der Wert zwischen 140 und 220 liegt
 
 def calc_acceleration(experience_level, awareness_level):
-    # Basiswert für die Beschleunigung
-    base_acceleration = 3.5
-    experience_effect = 0.5 * experience_level
-    awareness_effect = 0.5 * awareness_level
+    # Basiswert für die Beschleunigung, zufälliger Wert zwischen 2.5 und 8
+    base_acceleration = random.uniform(2.5, 8)
+    
+    # Effekte basierend auf Erfahrungs- und Bewusstseinsebene
+    experience_effect = 0.1 * experience_level  # Kleinerer Einfluss für Streuung
+    awareness_effect = 0.1 * awareness_level
     
     acceleration = base_acceleration + experience_effect + awareness_effect
     
-    # Sicherstellen, dass die Beschleunigung > 0 und <= 10
-    return max(0.1, min(10, acceleration))  # Mindestwert von 0.1 für Sicherheitsabstand
+    # Sicherstellen, dass die Beschleunigung > 2.5 und <= 8
+    return max(2.5, min(8, acceleration))
