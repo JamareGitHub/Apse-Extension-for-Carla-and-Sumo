@@ -12,9 +12,10 @@ import xml.dom.minidom as minidom
 from PIL import Image, ImageTk
 import traci
 import csv
+from datetime import datetime
+import config
 
 # Basisverzeichnis für CARLA und die Konfigurationsdatei
-import config
 carla_base_dir = config.carla_base_dir
 config_script = os.path.join(carla_base_dir, "PythonAPI", "util", "config.py")
 
@@ -82,9 +83,6 @@ def are_all_fields_valid():
             all_valid = False
         else:
             hud_frame['entry'].config(bg="white")
-        
-    
-    # Füge hier weitere spezifische Validierungslogik hinzu, falls nötig
 
     return all_valid
 
@@ -101,7 +99,6 @@ def run_simulation(map):
 
     
     path = os.path.join(sumo_base_dir, "examples", map + ".sumocfg")
-    #traci.start(["sumo", "-c", r"C:\Users\wimme\Downloads\CARLA\WindowsNoEditor\Co-Simulation\Sumo\examples\Town01.sumocfg"])
     traci.start(["sumo", "-c", path])
     
     simulation_data = []  # Liste zur Speicherung der Simulationsdaten
@@ -112,8 +109,7 @@ def run_simulation(map):
         for vehicle_id in traci.vehicle.getIDList():
             current_min_gap = traci.vehicle.getMinGap(vehicle_id)
             current_speed = traci.vehicle.getSpeed(vehicle_id)
-            position = traci.vehicle.getPosition(vehicle_id)  # Hole die Position des Fahrzeugs
-            #vehicle_type = traci.vehicle.getVehicleClass(vehicle_id)
+            position = traci.vehicle.getPosition(vehicle_id)  
             acceleration = traci.vehicle.getAcceleration(vehicle_id)
             distance_traveled = traci.vehicle.getDistance(vehicle_id)
             time_loss = traci.vehicle.getTimeLoss(vehicle_id)
@@ -128,7 +124,7 @@ def run_simulation(map):
             new_min_gap = max(2.0, (current_speed * 3.6 * 0.5 * min_gap_for_vehicle_type))
 
             traci.vehicle.setMinGap(vehicle_id, new_min_gap)
-            #print(f"Updated minGap for {vehicle_id} from {current_min_gap} to {new_min_gap}")
+    
 
     traci.close()
 
@@ -144,8 +140,14 @@ def save_simulation_data(simulation_data):
         print("Keine gültigen Simulationsdaten zum Speichern.")
         return
 
-    # Beispiel-CSV-Dateipfad
-    csv_filename = 'simulation_data.csv'
+    # Aktuelles Datum und Uhrzeit erhalten
+    now = datetime.now()
+
+    # Formatieren des Datums und der Uhrzeit
+    timestamp = now.strftime("%H-%M-%S_%Y-%m-%d")
+
+    # Beispiel-CSV-Dateipfad mit Datum und Uhrzeit
+    csv_filename = f'simulation_data_{timestamp}.csv'
 
     # Schreibe die Daten in die CSV
     with open(csv_filename, mode='w', newline='') as file:
@@ -163,8 +165,7 @@ def save_simulation_data(simulation_data):
                     'speedFactor',
                     'reactionTime',
                     'fatiguenessLevel',
-                    'awarenessLevel',
-                    'brightnessLevel']
+                    'awarenessLevel']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -195,7 +196,6 @@ def save_simulation_data(simulation_data):
                 reactionTime = hud_data_for_type.get('reactTime', 'N/A')
                 fatiguenessLevel = hud_data_for_type.get('fatigueness_level', 'N/A')
                 awarenessLevel = hud_data_for_type.get('awareness_level', 'N/A')
-                brightnessLevel = hud_data_for_type.get('brightness', 'N/A')
                 
                 # Schreibe die Zeile in die CSV
                 writer.writerow({
@@ -213,8 +213,7 @@ def save_simulation_data(simulation_data):
                     'speedFactor': speedFactor,
                     'reactionTime': reactionTime,
                     'fatiguenessLevel': fatiguenessLevel,
-                    'awarenessLevel': awarenessLevel,
-                    'brightnessLevel': brightnessLevel
+                    'awarenessLevel': awarenessLevel
                 })
 
     print("Daten erfolgreich gespeichert!")
@@ -609,7 +608,7 @@ def create_hud_frame():
     label_prob.grid(row=1, column=0, pady=5, padx=10, sticky='w')
     
     probability_var = tk.StringVar()
-    probability_entry = tk.Entry(frame, textvariable=probability_var, width=15)
+    probability_entry = tk.Entry(frame, textvariable=probability_var, width=15, font=('Helvetica', 11))
     probability_entry.insert(0, "1")  # Set initial value to 1
     probability_entry.grid(row=1, column=1, pady=5, padx=10, sticky='ew')
 
@@ -628,9 +627,11 @@ def create_hud_frame():
     
     brightness_var = tk.StringVar(frame)
     brightness_var.set(brightness_level[2])
-    brightness_menu = tk.OptionMenu(frame, brightness_var, *brightness_level)
-    brightness_menu.config(width=15)  # Setze eine feste Breite
+    brightness_menu = ttk.Combobox(frame, textvariable=brightness_var, values=brightness_level, state="readonly", font=('Helvetica', 11))
+    brightness_menu.current(1)  # Setzt standardmäßig den ersten verfügbaren Wert
     brightness_menu.grid(row=2, column=1, pady=5, padx=10, sticky='ew')
+
+    brightness_menu.bind('<<ComboboxSelected>>', on_selection)
 
     brightness_tooltip = ToolTip(brightness_menu, "Very dark: HUD is very visible.\nVery bright: HUD is almost see-through.")
     
@@ -645,9 +646,11 @@ def create_hud_frame():
     
     frequency_var = tk.StringVar(frame)
     frequency_var.set(information_frequency[1])
-    frequency_menu = tk.OptionMenu(frame, frequency_var, *information_frequency)
-    frequency_menu.config(width=15)  # Setze eine feste Breite
+    frequency_menu = ttk.Combobox(frame, textvariable=frequency_var, values=information_frequency, state="readonly", font=('Helvetica', 11))
+    frequency_menu.current(1)  # Setzt standardmäßig den ersten verfügbaren Wert
     frequency_menu.grid(row=3, column=1, pady=5, padx=10, sticky='ew')
+
+    frequency_menu.bind('<<ComboboxSelected>>', on_selection)
 
     frequency_tooltip = ToolTip(frequency_menu, "Minimum: the information is only displayed when needed\nMaximum: information is always displayed")
     
@@ -662,9 +665,11 @@ def create_hud_frame():
     
     relevance_var = tk.StringVar(frame)
     relevance_var.set(information_relevance[1])
-    relevance_menu = tk.OptionMenu(frame, relevance_var, *information_relevance)
-    relevance_menu.config(width=15)  # Setze eine feste Breite
+    relevance_menu = ttk.Combobox(frame, textvariable=relevance_var, values=information_relevance, state="readonly", font=('Helvetica', 11))
+    relevance_menu.current(1)  # Setzt standardmäßig den ersten verfügbaren Wert
     relevance_menu.grid(row=4, column=1, pady=5, padx=10, sticky='ew')
+
+    relevance_menu.bind('<<ComboboxSelected>>', on_selection)
 
     relevance_tooltip = ToolTip(relevance_menu, "Unimportant: HUD presents important information and information about your media, the weather,...\nImportant: HUD presents only information that is needed like current speed and navigation instructions.")
     
@@ -679,9 +684,11 @@ def create_hud_frame():
     
     fov_var = tk.StringVar(frame)
     fov_var.set(fov[1])
-    fov_menu = tk.OptionMenu(frame, fov_var, *fov)
-    fov_menu.config(width=15)  # Setze eine feste Breite
+    fov_menu = ttk.Combobox(frame, textvariable=fov_var, values=fov, state="readonly", font=('Helvetica', 11))
+    fov_menu.current(1)  # Setzt standardmäßig den ersten verfügbaren Wert
     fov_menu.grid(row=5, column=1, pady=5, padx=10, sticky='ew')
+
+    fov_menu.bind('<<ComboboxSelected>>', on_selection)
 
     fov_tooltip = ToolTip(fov_menu, "Small: Information is displayed directly above steering wheel.\nLarge: Information is displayed on whole windshield.")
     
