@@ -165,7 +165,9 @@ def save_simulation_data(simulation_data):
                     'speedFactor',
                     'reactionTime',
                     'fatiguenessLevel',
-                    'awarenessLevel']
+                    'awarenessLevel',
+                    'accelFactor']
+        
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -196,6 +198,8 @@ def save_simulation_data(simulation_data):
                 reactionTime = hud_data_for_type.get('reactTime', 'N/A')
                 fatiguenessLevel = hud_data_for_type.get('fatigueness_level', 'N/A')
                 awarenessLevel = hud_data_for_type.get('awareness_level', 'N/A')
+                accelFactor = hud_data_for_type.get('accel_factor', 'N/A')
+
                 
                 # Schreibe die Zeile in die CSV
                 writer.writerow({
@@ -213,7 +217,8 @@ def save_simulation_data(simulation_data):
                     'speedFactor': speedFactor,
                     'reactionTime': reactionTime,
                     'fatiguenessLevel': fatiguenessLevel,
-                    'awarenessLevel': awarenessLevel
+                    'awarenessLevel': awarenessLevel,
+                    'accelFactor': accelFactor
                 })
 
     print("Daten erfolgreich gespeichert!")
@@ -397,6 +402,7 @@ def hudSelection():
         maxSpeed = calculations.calc_MaxSpeed(experience_level, awareness_level)
         gapFactor = calculations.calc_MinGap(distraction_level, fatigueness_level, experience_level, awareness_level)
         speedFactor = calculations.calc_SpeedAd(information_frequency, fov_selection, distraction_level, fatigueness_level, experience_level, awareness_level)
+        accel = calculations.calc_acceleration(experience_level, awareness_level)
 
         # Store the calculated values in the dictionary
         hud_data[vehicle_type] = {
@@ -407,6 +413,7 @@ def hudSelection():
             "min_Gap": gapFactor,
             'vehicle_type': vehicle_type,
             'speed_factor': speedFactor,
+            'accel_factor': accel,
             'brightness': brightness_level
         }
 
@@ -457,6 +464,7 @@ def update_max_speeds(xml_file_path, hud_data):
         max_speed = data['max_speed']
         speedFactor = data.get('speed_factor', '')
         reactionTime = data.get('reactTime')
+        accelFactor = data.get('accel_factor')
 
         for vtype_elem in root.findall('vType'):
             vtype_id = vtype_elem.get('id')
@@ -464,6 +472,7 @@ def update_max_speeds(xml_file_path, hud_data):
             if vtype_id == vehicle_type:
                 vtype_elem.set('maxSpeed', str(max_speed))
                 vtype_elem.set('speedFactor', str(speedFactor))
+                vtype_elem.set('accel', str(accelFactor))
 
                 driverstate_params = vtype_elem.findall("./param[@key='has.driverstate.device']")
                 if driverstate_params:
