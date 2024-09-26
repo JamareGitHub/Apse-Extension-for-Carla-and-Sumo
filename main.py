@@ -602,23 +602,19 @@ def create_hud_frame():
     global header_entry
     header_entry = tk.Entry(frame, width=20, font=('Helvetica', 14, 'bold'))
     header_entry.insert(0, f"HUD {hud_number}")
-    header_entry.grid(row=0, column=0, pady=10, sticky='n')
+    header_entry.grid(row=0, column=0, pady=10, padx=10, sticky='n')
 
     # Wahrscheinlichkeit eingeben
-    label_prob = tk.Label(frame, text="Wahrscheinlichkeit eingeben:", bg="white")
+    label_prob = tk.Label(frame, text="HUD Probability: ", bg="white", font=('Helvetica', 11))
     label_prob.grid(row=1, column=0, pady=5, padx=10, sticky='w')
     
     probability_var = tk.StringVar()
     probability_entry = tk.Entry(frame, textvariable=probability_var, width=15)
-
-    # Register the validation function
-    validate_command = frame.register(lambda value: on_validate_input(value, probability_entry))
-    probability_entry.config(validate="key", validatecommand=(validate_command, "%P"))
     probability_entry.insert(0, "1")  # Set initial value to 1
-    probability_entry.grid(row=1, column=1, pady=5, padx=10, sticky='w')
+    probability_entry.grid(row=1, column=1, pady=5, padx=10, sticky='ew')
 
     # Tooltip für Wahrscheinlichkeit
-    prob_tooltip = ToolTip(probability_entry, "Wahrscheinlichkeit, dass das HUD angezeigt wird.")
+    prob_tooltip = ToolTip(probability_entry, "Probability is set in fractions. Please only use integers > 0.")
 
     # Button für Fragezeichen-Tooltip
     prob_question_button = tk.Button(frame, text="?", command=prob_tooltip.show_tooltip, width=3)
@@ -627,15 +623,16 @@ def create_hud_frame():
     prob_question_button.bind("<Leave>", lambda event, tooltip=prob_tooltip: tooltip.hide_tooltip())
 
     # Helligkeit auswählen
-    label_brightness = tk.Label(frame, text="Helligkeitsniveau auswählen:", bg="white")
+    label_brightness = tk.Label(frame, text="HUD brightness: ", bg="white", font=('Helvetica', 11))
     label_brightness.grid(row=2, column=0, pady=5, padx=10, sticky='w')
     
     brightness_var = tk.StringVar(frame)
     brightness_var.set(brightness_level[2])
     brightness_menu = tk.OptionMenu(frame, brightness_var, *brightness_level)
-    brightness_menu.grid(row=2, column=1, pady=5, padx=10, sticky='w')
+    brightness_menu.config(width=15)  # Setze eine feste Breite
+    brightness_menu.grid(row=2, column=1, pady=5, padx=10, sticky='ew')
 
-    brightness_tooltip = ToolTip(brightness_menu, "Helligkeitsniveau des HUDs.")
+    brightness_tooltip = ToolTip(brightness_menu, "Very dark: HUD is very visible.\nVery bright: HUD is almost see-through.")
     
     brightness_question_button = tk.Button(frame, text="?", command=brightness_tooltip.show_tooltip, width=3)
     brightness_question_button.grid(row=2, column=2, padx=5)
@@ -643,15 +640,16 @@ def create_hud_frame():
     brightness_question_button.bind("<Leave>", lambda event, tooltip=brightness_tooltip: tooltip.hide_tooltip())
 
     # Informationsdichte auswählen
-    label_frequency = tk.Label(frame, text="Informationsdichte für HUD auswählen:", bg="white")
+    label_frequency = tk.Label(frame, text="Information frequency: ", bg="white", font=('Helvetica', 11))
     label_frequency.grid(row=3, column=0, pady=5, padx=10, sticky='w')
     
     frequency_var = tk.StringVar(frame)
     frequency_var.set(information_frequency[1])
     frequency_menu = tk.OptionMenu(frame, frequency_var, *information_frequency)
-    frequency_menu.grid(row=3, column=1, pady=5, padx=10, sticky='w')
+    frequency_menu.config(width=15)  # Setze eine feste Breite
+    frequency_menu.grid(row=3, column=1, pady=5, padx=10, sticky='ew')
 
-    frequency_tooltip = ToolTip(frequency_menu, "Informationsdichte des HUDs.")
+    frequency_tooltip = ToolTip(frequency_menu, "Minimum: the information is only displayed when needed\nMaximum: information is always displayed")
     
     frequency_question_button = tk.Button(frame, text="?", command=frequency_tooltip.show_tooltip, width=3)
     frequency_question_button.grid(row=3, column=2, padx=5)
@@ -659,15 +657,16 @@ def create_hud_frame():
     frequency_question_button.bind("<Leave>", lambda event, tooltip=frequency_tooltip: tooltip.hide_tooltip())
 
     # Informationsrelevanz auswählen
-    label_relevance = tk.Label(frame, text="Informationsrelevanz für HUD auswählen:", bg="white")
+    label_relevance = tk.Label(frame, text="Information relevance: ", bg="white", font=('Helvetica', 11))
     label_relevance.grid(row=4, column=0, pady=5, padx=10, sticky='w')
     
     relevance_var = tk.StringVar(frame)
     relevance_var.set(information_relevance[1])
     relevance_menu = tk.OptionMenu(frame, relevance_var, *information_relevance)
-    relevance_menu.grid(row=4, column=1, pady=5, padx=10, sticky='w')
+    relevance_menu.config(width=15)  # Setze eine feste Breite
+    relevance_menu.grid(row=4, column=1, pady=5, padx=10, sticky='ew')
 
-    relevance_tooltip = ToolTip(relevance_menu, "Informationsrelevanz des HUDs.")
+    relevance_tooltip = ToolTip(relevance_menu, "Unimportant: HUD presents important information and information about your media, the weather,...\nImportant: HUD presents only information that is needed like current speed and navigation instructions.")
     
     relevance_question_button = tk.Button(frame, text="?", command=relevance_tooltip.show_tooltip, width=3)
     relevance_question_button.grid(row=4, column=2, padx=5)
@@ -675,15 +674,16 @@ def create_hud_frame():
     relevance_question_button.bind("<Leave>", lambda event, tooltip=relevance_tooltip: tooltip.hide_tooltip())
 
     # Field of View (FoV) auswählen
-    label_fov = tk.Label(frame, text="Field of View für HUD auswählen:", bg="white")
+    label_fov = tk.Label(frame, text="Field of View: ", bg="white", font=('Helvetica', 11))
     label_fov.grid(row=5, column=0, pady=5, padx=10, sticky='w')
     
     fov_var = tk.StringVar(frame)
     fov_var.set(fov[1])
     fov_menu = tk.OptionMenu(frame, fov_var, *fov)
-    fov_menu.grid(row=5, column=1, pady=5, padx=10, sticky='w')
+    fov_menu.config(width=15)  # Setze eine feste Breite
+    fov_menu.grid(row=5, column=1, pady=5, padx=10, sticky='ew')
 
-    fov_tooltip = ToolTip(fov_menu, "FoV des HUDs.")
+    fov_tooltip = ToolTip(fov_menu, "Small: Information is displayed directly above steering wheel.\nLarge: Information is displayed on whole windshield.")
     
     fov_question_button = tk.Button(frame, text="?", command=fov_tooltip.show_tooltip, width=3)
     fov_question_button.grid(row=5, column=2, padx=5)
@@ -691,13 +691,16 @@ def create_hud_frame():
     fov_question_button.bind("<Leave>", lambda event, tooltip=fov_tooltip: tooltip.hide_tooltip())
 
     # Dropdown für Fahrzeugtyp auswählen
-    label_vehicle_type = tk.Label(frame, text="Fahrzeugtyp auswählen:", bg="white")
+    label_vehicle_type = tk.Label(frame, text="Fahrzeugtyp auswählen:", bg="white", font=('Helvetica', 11))
     label_vehicle_type.grid(row=6, column=0, pady=5, padx=10, sticky='w')
-    
+
+    # Berechne die maximale Breite für die Fahrzeugtyp-Optionen
+    max_width = max(len(option) for option in available_vehicle_types) + 2  # +2 für etwas Puffer
     vehicle_type = tk.StringVar(frame)
-    vehicle_type_menu = ttk.Combobox(frame, textvariable=vehicle_type, values=available_vehicle_types, state="readonly", postcommand=lambda: dropdown_opened(vehicle_type_menu))
+    vehicle_type_menu = ttk.Combobox(frame, textvariable=vehicle_type, values=available_vehicle_types, state="readonly")
     vehicle_type_menu.current(0)  # Setzt standardmäßig den ersten verfügbaren Wert
-    vehicle_type_menu.grid(row=6, column=1, pady=5, padx=10, sticky='w')
+    vehicle_type_menu.config(width=max_width)  # Setze die Breite basierend auf der längsten Option
+    vehicle_type_menu.grid(row=6, column=1, pady=5, padx=10, sticky='ew')
 
     vehicle_type_menu.bind('<<ComboboxSelected>>', on_selection)
     
@@ -718,11 +721,12 @@ def create_hud_frame():
     }
 
     # Button zum Entfernen des HUDs
-    remove_button = tk.Button(frame, text="HUD entfernen", command=lambda: remove_hud(hud.get("hud_id")), bg="#ff6347", fg="white")
+    remove_button = tk.Button(frame, text="HUD entfernen", command=lambda: remove_hud(hud.get("hud_id")), bg="#ff6347", fg="white", width=15, font=('Helvetica', 12))  # Schriftgröße anpassen
     remove_button.grid(row=7, column=0, columnspan=3, pady=10)
 
     # Rückgabe des HUDs als Objekt zur Verwaltung
     return hud
+
 
 objects=[]
 
@@ -790,7 +794,7 @@ root.title("SUMO Simulation Launcher")
 
 # Fenstergröße und Position festlegen
 window_width = 800
-window_height = 600
+window_height = 800
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 x_coordinate = (screen_width - window_width) // 2
@@ -860,28 +864,28 @@ hudless_var = tk.BooleanVar()
 hudless_var.set(False)
 
 # Label für die Auswahl der Map
-map_label = tk.Label(main_tab, text="Wähle eine Map:")
-map_label.pack(pady=10)
+map_label = tk.Label(main_tab, text="Wähle eine Map:", font=('Helvetica', 14, 'bold'))
+map_label.pack(pady=5)
 
 # Listbox für die Auswahl der Map
-map_list = tk.Listbox(main_tab)
+map_list = tk.Listbox(main_tab, font=('Helvetica', 12), height=5, width=10)
 for map_name in maps:
     map_list.insert(tk.END, map_name)
-map_list.pack()
+map_list.pack(pady=10)
 
 # Binde das Auswahlereignis, um die Map zu speichern
 map_list.bind('<<ListboxSelect>>', on_map_select)
 
 # Checkbox für die Simulation
-simulate_checkbox = tk.Checkbutton(main_tab, text="Co-Simulation mit Carla starten", variable=simulate_var)
+simulate_checkbox = tk.Checkbutton(main_tab, text="Start co-Simulation with CARLA", variable=simulate_var, font=('Helvetica', 12))
 simulate_checkbox.pack()
 
 # Checkbox für den spectator
-spectator_checkbox = tk.Checkbutton(main_tab, text="first person spectator starten", variable=spectate_var)
+spectator_checkbox = tk.Checkbutton(main_tab, text="Start the CARLA first-person spectator client", variable=spectate_var, font=('Helvetica', 12))
 spectator_checkbox.pack()
 
 # Checkbox für den spectator
-hudless_checkbox = tk.Checkbutton(main_tab, text="Simulate a car without HUD", variable=hudless_var)
+hudless_checkbox = tk.Checkbutton(main_tab, text="Simulate a car without HUD", variable=hudless_var, font=('Helvetica', 12))
 hudless_checkbox.pack()
 
 # Hintergrundfarbe für den Canvas und Scrollbar hinzufügen
@@ -915,15 +919,18 @@ button_frame = tk.Frame(main_tab, bg="#f0f0f0")
 button_frame.pack(pady=10)
 
 # Buttons erstellen und einfügen
-add_hud_button = tk.Button(button_frame, text="HUD hinzufügen", command=add_hud, bg="#4682b4", fg="white")
-add_hud_button.pack(side="left", padx=20)
+button_width = 20  # Breite der Buttons festlegen
+button_height = 2  # Höhe der Buttons festlegen
 
-start_button = tk.Button(main_tab, text="Simulation starten", command=start_simulation, bg="#32cd32", fg="white")
-start_button.pack(pady=10)
+# Buttons erstellen und einfügen
+add_hud_button = tk.Button(button_frame, text="Add HUDD", command=add_hud, bg="#4682b4", fg="white", width=button_width, height=button_height, font=('Helvetica', 10))
+add_hud_button.pack(pady=10)  # Packe den Button mit Abstand nach oben
 
-close_button = tk.Button(main_tab, text="Schließen", command=close_window, bg="#a9a9a9", fg="white")
-close_button.pack(pady=10)
+start_button = tk.Button(button_frame, text="Start simulation", command=start_simulation, bg="#32cd32", fg="white", width=button_width, height=button_height, font=('Helvetica', 10))
+start_button.pack(pady=10)  # Packe den Button mit Abstand nach oben
 
+close_button = tk.Button(button_frame, text="Close", command=close_window, bg="#a9a9a9", fg="white", width=button_width, height=button_height, font=('Helvetica', 10))
+close_button.pack(pady=10, padx=10) 
 # unbind scrolling over the combobox so that we don't scroll through options (optional)
 scrollable_frame.unbind_class("TCombobox", "<MouseWheel>")
 
@@ -950,3 +957,4 @@ create_default_huds()
 
 # Hauptloop starten
 root.mainloop()
+
