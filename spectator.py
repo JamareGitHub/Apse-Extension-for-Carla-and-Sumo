@@ -11,7 +11,7 @@ class CarlaCameraClient:
     def __init__(self, host='127.0.0.1', port=2000):
         # Initialize the CARLA client and world
         self.client = carla.Client(host, port)
-        self.client.set_timeout(10.0)
+        self.client.set_timeout(10.0)#timeout till connection attempt cancel
         self.world = self.client.get_world()
         self.blueprint_library = self.world.get_blueprint_library()
         self.camera = None
@@ -20,8 +20,6 @@ class CarlaCameraClient:
         self.current_vehicle_index = -1
         self.image_data = None
         self.exit_flag = False
-        self.hudname = 'HUD'
-        self.showInfoOverlay = True
 
         # Speed-related attributes
         self.speed = 0.0  # Store the speed of the vehicle
@@ -36,8 +34,10 @@ class CarlaCameraClient:
 
         # Camera configuration
         self.first_person_location = [0.0, 0.0, 0.0]  # Camera position
-        self.image_resolution_x = '1920'
-        self.image_resolution_y = '1080'
+        self.image_resolution_x = '1920'#window resolution 
+        self.image_resolution_y = '1080'#window resolution 
+        self.hudname = ''
+        self.showInfoOverlay = True
 
         # HUD icons configuration
         self.hud_area_start = (0.00, 0,00)
@@ -248,6 +248,7 @@ class CarlaCameraClient:
         self.reset_hud()
 
     def reset_hud(self):
+        """reset all hud elements to prepare for new hud"""
         self.hudname = ''
         self.show_speed_text = False
         self.show_icon_stopwatch = False
