@@ -412,19 +412,19 @@ class CarlaCameraClient:
         image = cv2.putText(image, speed_text, org, font, 
                         fontScale, color, thickness, cv2.LINE_AA)
 
-        
-        vehicle_name = f"Vehicle type: {self.vehicle.type_id}"  # Vehicle type text
+        vehicle_name_arr =  self.vehicle.type_id.split(".")
+        vehicle_name_text = f"Vehicle type: {vehicle_name_arr[1].capitalize()} {vehicle_name_arr[2]}"  # Vehicle type text
         hudname_text = f"HUD Name: {self.hudname}" #HUD Name text
         font = cv2.FONT_HERSHEY_SIMPLEX  # Font for the text
 
 
         # Get text size for centering
-        text_size_vehicle = cv2.getTextSize(vehicle_name, font, 1, 1)[0]
+        text_size_vehicle = cv2.getTextSize(vehicle_name_text, font, 1, 1)[0]
 
         # Draw text centered on the screen
         if self.showInfoOverlay:
             cv2.putText(image, hudname_text, (width//2 - text_size_vehicle[0] // 2, 25), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-            cv2.putText(image, vehicle_name, (width//2 - text_size_vehicle[0] // 2, 55), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.putText(image, vehicle_name_text, (width//2 - text_size_vehicle[0] // 2, 55), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
 
     def overlay_icon(self, image, icon, position):
         """Overlay the icon onto the image at the given position."""
