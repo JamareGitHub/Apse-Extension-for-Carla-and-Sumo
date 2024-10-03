@@ -25,15 +25,32 @@
 
 ## Technical
 
-#### Files overview:
-
-* main.py: Contains the menu that configures and starts the software. Is also used to start the other components.
-* spectator.py: Contains the code just for the spectator client
-* calculations.py: Contains all calculations that translate the HUD settings into behavioral changes
-* config.py: Configuration file to setup paths to other components
-* hudconfig.xml: Contains the current HUD settings for the simulation
-* hudconfig.xsd: Validation file for the created hudconfig.xml
-* simulation_data.csv: Contains the data from the simulation
+### Files overview:
+  ```ultree
+      Apse-Extension-for-Carla-and-Sumo
+          icons : Folder that contains the Icons used as HUD elements in the spectator client 
+              12 icon image files
+          screenshots : Folder that contains screenshots from the components for use in the docs and help page
+              13 screenshots
+          setup_files : Folder that contains the path and the files that need to be updated within Carla for the program to run
+              root_folder_of_carla
+                  WindowsNoEditor
+                      Co-Simulation
+                          Sumo
+                              examples
+                                  rou
+                                      Town01.rou.xml
+                                      Town04.rou.xml
+                                      Town05.rou.xml
+          Simulation_data : Folder that contains all generated simulation data, empty by default.
+          calculations.py : File that contains all simulation formulas.
+          config.py : Configuration file that contains the path to the Carla folder.
+          hudconfig.xml : File that contains the HUD config of the last simulation, used to transfer HUD settings from the main client to the spectator client.
+          main.py : File that contains the main client, used to start all other components and configure all HUDs.
+          README.md : Readme that contains a overview over all files and instructions to run the program.
+          requirements.txt : File that contains the python packages that are used and are not included in the default python installation.
+          spectator.py : File that contains the spectator client, used to spectate Cars from a driver perspective and show an example HUD based on the HUD configuration.
+  ```
 
 #### Icon/ images source:
 
