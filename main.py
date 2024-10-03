@@ -147,7 +147,7 @@ def save_simulation_data(simulation_data):
     timestamp = now.strftime("%H-%M-%S_%Y-%m-%d")
 
     # Example csv file path containing date and time
-    csv_filename = f'simulation_data_{timestamp}.csv'
+    csv_filename = f'Simulation_data/simulation_data_{timestamp}.csv'
 
     # Write data to csv file
     with open(csv_filename, mode='w', newline='') as file:
