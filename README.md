@@ -1,9 +1,9 @@
 # Apse-Extension-for-Carla-and-Sumo
 
 ## Requirements / Pre-installation
-* Python 3.10
-* Sumo 1.20
-* Carla 0.9.15
+* [Python 3.10](https://www.python.org/downloads/)
+* [Sumo 1.20](https://sumo.dlr.de/docs/Downloads.php)
+* [Carla 0.9.15](https://carla.readthedocs.io/en/0.9.15/download/)
 
 ## Setup
 1. Make sure that all requirements are installed and the PATH variable is correctly set.
