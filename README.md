@@ -26,31 +26,29 @@
 ## Technical
 
 ### Files overview:
-  ```ultree
-      Apse-Extension-for-Carla-and-Sumo
-          icons : Folder that contains the Icons used as HUD elements in the spectator client 
-              12 icon image files
-          screenshots : Folder that contains screenshots from the components for use in the docs and help page
-              13 screenshots
-          setup_files : Folder that contains the path and the files that need to be updated within Carla for the program to run
-              root_folder_of_carla
-                  WindowsNoEditor
-                      Co-Simulation
-                          Sumo
-                              examples
-                                  rou
-                                      Town01.rou.xml
-                                      Town04.rou.xml
-                                      Town05.rou.xml
-          Simulation_data : Folder that contains all generated simulation data, empty by default.
-          calculations.py : File that contains all simulation formulas.
-          config.py : Configuration file that contains the path to the Carla folder.
-          hudconfig.xml : File that contains the HUD config of the last simulation, used to transfer HUD settings from the main client to the spectator client.
-          main.py : File that contains the main client, used to start all other components and configure all HUDs.
-          README.md : Readme that contains a overview over all files and instructions to run the program.
-          requirements.txt : File that contains the python packages that are used and are not included in the default python installation.
-          spectator.py : File that contains the spectator client, used to spectate Cars from a driver perspective and show an example HUD based on the HUD configuration.
-  ```
+        Apse-Extension-for-Carla-and-Sumo
+        |---icons : Folder that contains the Icons used as HUD elements in the spectator client 
+        |    |---12 icon image files
+        |---screenshots : Folder that contains screenshots from the components for use in the docs and help page
+        |    |---13 screenshots
+        |---setup_files : Folder that contains the path and the files that need to be updated within Carla for the program to run
+        |    |---root_folder_of_carla
+        |          |---WindowsNoEditor
+        |               |---Co-Simulation
+        |                    |---Sumo
+        |                         |---examples
+        |                              |---rou
+        |                                   |---Town01.rou.xml : Route file for map Town01, required for vehicles to be simulated in Carla
+        |                                   |---Town04.rou.xml : Route file for map Town04, required for vehicles to be simulated in Carla
+        |                                   |---Town05.rou.xml : Route file for map Town05, required for vehicles to be simulated in Carla
+        |---Simulation_data : Folder that contains all generated simulation data, empty by default.
+        |---calculations.py : File that contains all simulation formulas.
+        |---config.py : Configuration file that contains the path to the Carla folder.
+        |---hudconfig.xml : File that contains the HUD config of the last simulation, used to transfer HUD settings from the main client to the spectator client.
+        |---main.py : File that contains the main client, used to start all other components and configure all HUDs.
+        |---README.md : Readme that contains a overview over all files and instructions to run the program.
+        |---requirements.txt : File that contains the python packages that are used and are not included in the default python installation.
+        |---spectator.py : File that contains the spectator client, used to spectate Cars from a driver perspective and show an example HUD based on the HUD configuration.
 
 #### Icon/ images source:
 
