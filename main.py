@@ -917,6 +917,187 @@ header_label.pack(pady=5, padx=20, anchor="w")
 empty_label = tk.Label(scrollable_frame, text="")
 empty_label.pack(pady=5, padx=20, anchor="w")  # Padding after the empty line
 
+
+"""explanation of HUD elements"""
+header_label = tk.Label(scrollable_frame, text="Explanation of Spectator HUD Icons", font=("Arial", 14, "bold"), justify="left")
+header_label.pack(pady=5, padx=20, anchor="w")
+
+
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
+imageicon1 = Image.open("icons\stopwatch-svgrepo-com.png")
+imageicon1 = imageicon1.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
+imageicon1_tk = ImageTk.PhotoImage(imageicon1)
+
+imageicon1 = tk.Frame(image_frame)
+imageicon1.pack(side="left", padx=20)
+
+label_imageicon1 = tk.Label(imageicon1, image=imageicon1_tk)
+label_imageicon1.pack(pady=10)
+
+label_imageicon1 = tk.Label(imageicon1, text="Speedometer with updating vehicle speed", font=("Arial", 12))
+label_imageicon1.pack(pady=10)
+
+imageicon2 = Image.open(r"icons\battery-svgrepo-com.png")
+imageicon2 = imageicon2.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
+imageicon2_tk = ImageTk.PhotoImage(imageicon2)
+
+imageicon2 = tk.Frame(image_frame)
+imageicon2.pack(side="left", padx=15)
+
+label_imageicon2 = tk.Label(imageicon2, image=imageicon2_tk)
+label_imageicon2.pack(pady=10)
+
+label_imageicon2 = tk.Label(imageicon2, text="Current battery charge (for electric vehicle) (placeholder)", font=("Arial", 12))
+label_imageicon2.pack(pady=10)
+
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
+imageicon3 = Image.open("icons\calendar-svgrepo-com.png")
+imageicon3 = imageicon3.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
+imageicon3_tk = ImageTk.PhotoImage(imageicon3)
+
+imageicon3 = tk.Frame(image_frame)
+imageicon3.pack(side="left", padx=70)
+
+label_imageicon3 = tk.Label(imageicon3, image=imageicon3_tk)
+label_imageicon3.pack(pady=10)
+
+label_imageicon3 = tk.Label(imageicon3, text="Current date (placeholder)", font=("Arial", 12))
+label_imageicon3.pack(pady=10)
+
+imageicon4 = Image.open("icons\clock-svgrepo-com.png")
+imageicon4 = imageicon4.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
+imageicon4_tk = ImageTk.PhotoImage(imageicon4)
+
+imageicon4 = tk.Frame(image_frame)
+imageicon4.pack(side="left", padx=100)
+
+label_imageicon4 = tk.Label(imageicon4, image=imageicon4_tk)
+label_imageicon4.pack(pady=10)
+
+label_imageicon4 = tk.Label(imageicon4, text="Current time (placeholder)", font=("Arial", 12))
+label_imageicon4.pack(pady=10)
+
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
+imageicon5 = Image.open("icons\compass-svgrepo-com.png")
+imageicon5 = imageicon5.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
+imageicon5_tk = ImageTk.PhotoImage(imageicon5)
+
+imageicon5 = tk.Frame(image_frame)
+imageicon5.pack(side="left", padx=60)
+
+label_imageicon5 = tk.Label(imageicon5, image=imageicon5_tk)
+label_imageicon5.pack(pady=10)
+
+label_imageicon5 = tk.Label(imageicon5, text="Current Orientation (placeholder)", font=("Arial", 12))
+label_imageicon5.pack(pady=10)
+
+imageicon6 = Image.open("icons\idea-svgrepo-com.png")
+imageicon6 = imageicon6.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
+imageicon6_tk = ImageTk.PhotoImage(imageicon6)
+
+imageicon6 = tk.Frame(image_frame)
+imageicon6.pack(side="left", padx=50)
+
+label_imageicon6 = tk.Label(imageicon6, image=imageicon6_tk)
+label_imageicon6.pack(pady=10)
+
+label_imageicon6 = tk.Label(imageicon6, text="Current state of headlights (placeholder)", font=("Arial", 12))
+label_imageicon6.pack(pady=10)
+
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
+imageicon7 = Image.open("icons\minus-svgrepo-com.png")
+imageicon7 = imageicon7.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
+imageicon7_tk = ImageTk.PhotoImage(imageicon7)
+
+imageicon7 = tk.Frame(image_frame)
+imageicon7.pack(side="left", padx=60)
+
+label_imageicon7 = tk.Label(imageicon7, image=imageicon7_tk)
+label_imageicon7.pack(pady=10)
+
+label_imageicon7 = tk.Label(imageicon7, text="Current speed limit (placeholder)", font=("Arial", 12))
+label_imageicon7.pack(pady=10)
+
+imageicon8 = Image.open("icons\music-player-svgrepo-com.png")
+imageicon8 = imageicon8.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
+imageicon8_tk = ImageTk.PhotoImage(imageicon8)
+
+imageicon8 = tk.Frame(image_frame)
+imageicon8.pack(side="left", padx=0)
+
+label_imageicon8 = tk.Label(imageicon8, image=imageicon8_tk)
+label_imageicon8.pack(pady=10)
+
+label_imageicon8 = tk.Label(imageicon8, text="Music player / radio showing current song (placeholder)", font=("Arial", 12))
+label_imageicon8.pack(pady=10)
+
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
+imageicon9 = Image.open(r"icons\navigation-svgrepo-com.png")
+imageicon9 = imageicon9.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
+imageicon9_tk = ImageTk.PhotoImage(imageicon9)
+
+imageicon9 = tk.Frame(image_frame)
+imageicon9.pack(side="left", padx=70)
+
+label_imageicon9 = tk.Label(imageicon9, image=imageicon9_tk)
+label_imageicon9.pack(pady=10)
+
+label_imageicon9 = tk.Label(imageicon9, text="Navigation (placeholder)", font=("Arial", 12))
+label_imageicon9.pack(pady=10)
+
+imageicon10 = Image.open("icons\placeholder-svgrepo-com.png")
+imageicon10 = imageicon10.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
+imageicon10_tk = ImageTk.PhotoImage(imageicon10)
+
+imageicon10 = tk.Frame(image_frame)
+imageicon10.pack(side="left", padx=70)
+
+label_imageicon10 = tk.Label(imageicon10, image=imageicon10_tk)
+label_imageicon10.pack(pady=10)
+
+label_imageicon10 = tk.Label(imageicon10, text="Current geolocation (placeholder)", font=("Arial", 12))
+label_imageicon10.pack(pady=10)
+
+
+image_frame = tk.Frame(scrollable_frame)
+image_frame.pack(pady=10, padx=10, anchor="w")
+imageicon11 = Image.open(r"icons\smartphone-svgrepo-com.png")
+imageicon11 = imageicon11.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
+imageicon11_tk = ImageTk.PhotoImage(imageicon11)
+
+imageicon11 = tk.Frame(image_frame)
+imageicon11.pack(side="left", padx=40)
+
+label_imageicon11 = tk.Label(imageicon11, image=imageicon11_tk)
+label_imageicon11.pack(pady=10)
+
+label_imageicon11 = tk.Label(imageicon11, text="Smartphone connection (placeholder)", font=("Arial", 12))
+label_imageicon11.pack(pady=10)
+
+imageicon12 = Image.open("icons\speaker-svgrepo-com.png")
+imageicon12 = imageicon12.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
+imageicon12_tk = ImageTk.PhotoImage(imageicon12)
+
+imageicon12 = tk.Frame(image_frame)
+imageicon12.pack(side="left", padx=100)
+
+label_imageicon12 = tk.Label(imageicon12, image=imageicon12_tk)
+label_imageicon12.pack(pady=10)
+
+label_imageicon12 = tk.Label(imageicon12, text="Music volume (placeholder)", font=("Arial", 12))
+label_imageicon12.pack(pady=10)
+
+
+# empty line
+empty_label = tk.Label(scrollable_frame, text="")
+empty_label.pack(pady=5, padx=20, anchor="w")  # Padding after the empty line
+
+
 # Header on the help tab
 header_label = tk.Label(scrollable_frame, text="Setting a HUD for simulation", font=("Arial", 14, "bold"), justify="left")
 header_label.pack(pady=5, padx=20, anchor="w")
