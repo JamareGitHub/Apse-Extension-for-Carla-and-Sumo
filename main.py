@@ -111,7 +111,7 @@ def run_simulation(map):
 
             min_gap_for_vehicle_type = hud_data.get(vehicle_type, {}).get("min_Gap", 1)
 
-            new_min_gap = max(2.0, (current_speed * 3.6 * 0.5 * min_gap_for_vehicle_type))
+            new_min_gap = max(2.0, (current_speed * 0.5 * min_gap_for_vehicle_type))
 
             traci.vehicle.setMinGap(vehicle_id, new_min_gap)
     
@@ -707,9 +707,7 @@ def create_hud_frame():
         'hud_id': hud_number 
     }
 
-    # button to remove the HUD
-    remove_button = tk.Button(frame, text="Remove HUD", command=lambda: remove_hud(hud.get("hud_id")), bg="#ff6347", fg="white", width=15, font=('Helvetica', 12))  # Schriftgröße anpassen
-    remove_button = tk.Button(frame, text="HUD entfernen", command=lambda: remove_hud(hud.get("hud_id")), bg="#ff6347", fg="white", width=15, font=('Helvetica', 12))  # Schriftgröße anpassen
+    remove_button = tk.Button(frame, text="Remove HUD", command=lambda: remove_hud(hud.get("hud_id")), bg="#ff6347", fg="white", width=15, font=('Helvetica', 12))
     remove_button.grid(row=7, column=0, columnspan=3, pady=10)
 
     return hud

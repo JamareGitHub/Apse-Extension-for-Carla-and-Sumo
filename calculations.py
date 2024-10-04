@@ -141,7 +141,7 @@ def calc_ReactTime(distraction_level, fatigueness_level, awareness_level):
 
 
 def calc_MinGap(distraction_level, fatigueness_level, awareness_level, field_of_view):
-    base_min_gap = 1.5
+    base_min_gap = 1.4
     weight_fov = 0.3
 
     distraction_effect = 0.6 * distraction_level  
