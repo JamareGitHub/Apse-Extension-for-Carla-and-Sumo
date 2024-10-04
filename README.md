@@ -12,6 +12,19 @@
 4. Open "config.py" and setup your carla base path up to the folder "\WindowsNoEditor".
 5. Copy content of setup_files into the Carla folder (copy the WindowsNoEditor folder over the one from carla, merge/ overwrite if promted)
 
+## Update .rou files
+* For the simulation to work you need to update the .rou.xml files in your CarlaBaseDir/Co-Simulation/Sumo/examples/rou folder.
+* You can either use the files provided with this project or create your own files using randomTrips.py.
+* You can find the method in the /tools folder in your SUMO installation.
+
+```
+python randomTrips.py -n "CarlaBaseDir/Co-Simulation/Sumo/examples/net/Townxx.net.xml" -e 7200 --route-file "CarlaBaseDir/Co-Simulation/Sumo/examples/rou/Townxx.rou.xml" --period 6 --validate 
+```
+* Using this command you will get the appropriate .rou file for the simulation. 
+* You can change the duration of your simulation by setting the -e to a different value.
+* Please make sure to also set  --period <FLOAT> (default 1) to your prefered value. 
+  Note: Setting --period too low will cause the simulation to become overflooded which prevents the simulation from running correctly. You can avoid this by choosing a higher --period value.
+
 ## Running the Software
 1. Run main.py to access the GUI ("python main.py")
 2. In the GUI, select which components u want to run. To use the spectator, the Carla server is required
