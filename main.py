@@ -66,6 +66,8 @@ base_frame = {
 
 hud_id_mapping = {}
 
+objects=[]
+
 def are_all_fields_valid():
     all_valid = True
 
@@ -80,6 +82,10 @@ def are_all_fields_valid():
     return all_valid
 
 
+"""
+Function that handles getting the data from the simulation via Traci and setting the 
+minimal Gap dynamically. 
+"""
 def run_simulation(map):
 
     min_gap_mapping = {}
@@ -121,6 +127,11 @@ def run_simulation(map):
     save_simulation_data(simulation_data, map)
 
 
+"""
+Function that checks which boxes on the setting tab are checked. If a box is checked
+this function takes the collected data from Traci or the saved data from the HUD
+settings and stores it in the .csv
+"""
 def save_simulation_data(simulation_data, map):
 
     if not simulation_data or not isinstance(simulation_data, list):
@@ -262,6 +273,9 @@ def save_simulation_data(simulation_data, map):
             
 string_hud_frames = []
 
+"""
+Function to make sure all saved huds only hold string values.
+"""
 def convert_hudFrames():
 
     for hud in hud_frames:
@@ -288,6 +302,13 @@ def map_vehicle_type_to_hud_id():
         hud_id_mapping[vehicle_type] = hud_id
 
 
+"""
+Function that handles the start of the simulation. First it checks if all fields are valid.
+Then it checks the simulation settings: simulation with CARLA server/ first person client 
+or with an HUD-less car.
+
+Increase sleep timer if CARLA takes longer to start.
+"""
 def start_simulation():
     if not map_list.curselection():
         messagebox.showwarning("No map selected", "Please select a map for the simulation.")
@@ -400,6 +421,9 @@ def start_simulation():
             run_simulation(selected_map)
 
 
+"""
+Function that saves the selected options and the calculated data
+"""
 def hudSelection():
 
     for hud in string_hud_frames:
@@ -439,6 +463,10 @@ def hudSelection():
     return hud_data
 
 
+"""
+Function that writes the .xml file for the spectator client.
+It saves the settings of every HUD so that they can be easily accessed.
+"""
 def writeXML(hud_list):
     root = ET.Element("Vehicles")
   
@@ -469,6 +497,10 @@ def writeXML(hud_list):
     return xml_file_path
 
 
+"""
+Function that updates the vehicle types in the .rou.xml file.
+This update is important to set new behaviour to the cars that are being simulated.
+"""
 def update_vehicles(xml_file_path, hud_data):
     tree = ET.parse(xml_file_path)
     root = tree.getroot()
@@ -526,6 +558,9 @@ def start_sumo(selected_sumocfg):
         print("Couldn't start SUMO. Please check if your SUMO path is correct.")
 
 
+"""
+Function to set the vehicle types in the .rou file. 
+"""
 def modify_vehicle_routes(selected_map):
     original_routes_file = os.path.join(sumo_base_dir, "examples", "rou", selected_map + ".rou.xml")
 
@@ -639,6 +674,10 @@ def on_validate_input(value, entry):
     return True  
 
 
+"""
+Function for the HUD frames that makes it possible for the user to create
+new AR HUDs
+"""
 def create_hud_frame(next_hud_id):
     hud_number = len(hud_frames) + 1
 
@@ -769,9 +808,6 @@ def create_hud_frame(next_hud_id):
     remove_button.grid(row=7, column=0, columnspan=3, pady=10)
 
     return hud
-
-
-objects=[]
 
 def dropdown_opened(dropdown):
     dropdown['values'] = available_vehicle_types 

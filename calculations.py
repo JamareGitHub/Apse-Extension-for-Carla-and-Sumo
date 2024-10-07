@@ -1,3 +1,12 @@
+"""
+Function that takes the information_relevance, information_frequency and fov of the HUD settings and the calculated
+distraction_level (calc_distraction) and fatigueness_level (calc_fatigueness) and calculates the awareness_level.
+The return value is an int between 1 and 10.
+
+-https://ieeexplore.ieee.org/document/10199531
+-https://ieeexplore.ieee.org/document/8943689
+
+"""
 def calc_awareness(information_relevance, information_frequency, distraction_level, fatigueness_level, fov):
     base_awareness = 5  
 
@@ -40,6 +49,14 @@ def calc_awareness(information_relevance, information_frequency, distraction_lev
     return int(awareness_level)
 
 
+"""
+Function that takes the information_relevance, information_frequency, brightness and fov of the HUD settings 
+and calculates the distraction_level.
+The return value is an int between 1 and 10.
+
+-https://www.sciencedirect.com/science/article/pii/S1369847815000741
+-https://ieeexplore.ieee.org/document/8917472
+"""
 def calc_distraction(information_relevance, information_frequency, brightness, fov):
 
     base_distraction = 6
@@ -88,6 +105,14 @@ def calc_distraction(information_relevance, information_frequency, brightness, f
     return int(distraction_level) 
 
 
+"""
+Function that takes the information_relevance, information_frequency and brightness of the HUD settings 
+and calculates the fatigueness_level.
+The return value is an int between 1 and 10.
+
+-https://www.sciencedirect.com/science/article/pii/S1877042814001311
+-https://www.sciencedirect.com/science/article/pii/S0001457505000114
+"""
 def calc_fatigueness(information_relevance, information_frequency, brightness):
     
     base_fatigueness = 5
@@ -125,7 +150,13 @@ def calc_fatigueness(information_relevance, information_frequency, brightness):
     return int(fatigue_level)
 
 
+"""
+Function that takes the calculated distraction_level, fatigueness_level and awareness_level 
+and calculates the reaction time.
 
+-https://www.sciencedirect.com/science/article/pii/S0141938204000022
+-https://onlinelibrary.wiley.com/doi/full/10.4218/etrij.16.0115.0770
+"""
 def calc_ReactTime(distraction_level, fatigueness_level, awareness_level):
     base_time = 0.9
 
@@ -138,6 +169,12 @@ def calc_ReactTime(distraction_level, fatigueness_level, awareness_level):
     return react_time
 
 
+"""
+Function that takes the calculated distraction_level, fatigueness_level and awareness_level and 
+the fov of the HUD settings and calculates the minimal gap factor. 
+
+-https://www.sciencedirect.com/science/article/pii/S1071581923000691
+"""
 def calc_MinGap(distraction_level, fatigueness_level, awareness_level, field_of_view):
     base_min_gap = 1.4
     weight_fov = 0.3
@@ -157,6 +194,13 @@ def calc_MinGap(distraction_level, fatigueness_level, awareness_level, field_of_
     return min_gap_factor
 
 
+"""
+Function that takes the calculated distraction_level, fatigueness_level and awareness_level 
+and the fov, information_relevance and information_frequency and calculates the speed adherence factor.
+
+-https://www.sciencedirect.com/science/article/pii/S0003687023001850
+-https://www.sciencedirect.com/science/article/pii/S1071581923000691
+"""
 def calc_SpeedAd(fov, distraction_level, fatigueness_level, awareness_level, information_relevance, frequency):
 
     base_SpeedAd = 0.95 
@@ -199,6 +243,14 @@ def calc_SpeedAd(fov, distraction_level, fatigueness_level, awareness_level, inf
 
     return float(speedAd)
 
+
+"""
+Function that takes the calculated distraction_level, fatigueness_level and awareness_level 
+and the information_frequency of the HUD settings and calculates the maximal speed.
+
+-https://ieeexplore.ieee.org/document/9536587
+-https://www.sciencedirect.com/science/article/pii/S0003687023001850
+"""
 def calc_MaxSpeed(awareness_level, fatigueness_level, distraction_level, frequency):
     
     base_speed = 150
@@ -222,6 +274,13 @@ def calc_MaxSpeed(awareness_level, fatigueness_level, distraction_level, frequen
     return int(max_speed) 
 
 
+"""
+Function that takes the calculated distraction_level, fatigueness_level and awareness_level 
+and the information_relevance of the HUD settings and calculates the acceleration.
+
+-https://www.sciencedirect.com/science/article/pii/S1071581904000497
+-https://ieeexplore.ieee.org/document/9536587
+"""
 def calc_acceleration(fatigueness_level, distraction_level, awareness_level, relevance):
     
     base_acceleration = 6.5
