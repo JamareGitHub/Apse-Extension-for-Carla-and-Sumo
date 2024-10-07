@@ -739,7 +739,7 @@ def create_hud_frame(next_hud_id):
     fov_question_button.bind("<Enter>", lambda event, tooltip=fov_tooltip: tooltip.show_tooltip())
     fov_question_button.bind("<Leave>", lambda event, tooltip=fov_tooltip: tooltip.hide_tooltip())
 
-    label_vehicle_type = tk.Label(frame, text="Fahrzeugtyp auswählen:", bg="white", font=('Helvetica', 11))
+    label_vehicle_type = tk.Label(frame, text="Select vehicle type:", bg="white", font=('Helvetica', 11))
     label_vehicle_type.grid(row=6, column=0, pady=5, padx=10, sticky='w')
 
     max_width = max(len(option) for option in available_vehicle_types) + 2  
@@ -1344,7 +1344,7 @@ spectate_var.set(False)
 hudless_var = tk.BooleanVar()
 hudless_var.set(False)
 
-map_label = tk.Label(main_tab, text="Wähle eine Map:", font=('Helvetica', 14, 'bold'))
+map_label = tk.Label(main_tab, text="Select a map:", font=('Helvetica', 14, 'bold'))
 map_label.pack(pady=5)
 
 map_list = tk.Listbox(main_tab, font=('Helvetica', 12), height=5, width=10)
