@@ -37,7 +37,7 @@ def calc_awareness(information_relevance, information_frequency, distraction_lev
 
     awareness_level = base_awareness * (total_effect/3) 
 
-    return int(awareness_level) 
+    return int(awareness_level)
 
 
 def calc_distraction(information_relevance, information_frequency, brightness, fov):
@@ -133,9 +133,7 @@ def calc_ReactTime(distraction_level, fatigueness_level, awareness_level):
     fatigueness_effect = 0.2 * fatigueness_level
     awareness_effect = 0.7 * awareness_level  
     
-    total_effect = (-distraction_effect -fatigueness_effect + awareness_effect)/3
-    
-    react_time = base_time + ((-(awareness_effect ** 0.4) + (distraction_effect + fatigueness_effect)**0.3))/3
+    react_time = base_time + ((distraction_effect + fatigueness_effect)**0.3-(awareness_effect ** 0.4))/3
 
     return react_time
 

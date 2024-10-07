@@ -87,7 +87,6 @@ def run_simulation(map):
     for vehicle_type, data in hud_data.items():
         min_gap = data.get("min_Gap")  
         min_gap_mapping[vehicle_type] = min_gap
-
     
     path = os.path.join(sumo_base_dir, "examples", map + ".sumocfg")
     traci.start(["sumo", "-c", path])
@@ -98,14 +97,15 @@ def run_simulation(map):
         traci.simulationStep() 
 
         for vehicle_id in traci.vehicle.getIDList():
-            current_min_gap = traci.vehicle.getMinGap(vehicle_id)
+            current_gap = traci.vehicle.getMinGap(vehicle_id)
             current_speed = traci.vehicle.getSpeed(vehicle_id) * 3.6
             position = traci.vehicle.getPosition(vehicle_id)  
-            acceleration = traci.vehicle.getAcceleration(vehicle_id)
+            current_acceleration = traci.vehicle.getAcceleration(vehicle_id)
             distance_traveled = traci.vehicle.getDistance(vehicle_id)
             time_loss = traci.vehicle.getTimeLoss(vehicle_id)
+            simTime = traci.simulation.getTime()
 
-            simulation_data.append([vehicle_id, current_speed, current_min_gap, position[0], position[1], acceleration, distance_traveled, time_loss])
+            simulation_data.append([vehicle_id, simTime, position[0], position[1], current_speed, current_gap, current_acceleration, distance_traveled, time_loss])
             
             vehicle_type = vehicle_type_mapping.get(vehicle_id, "unknown")
 
@@ -126,87 +126,140 @@ def save_simulation_data(simulation_data, map):
     if not simulation_data or not isinstance(simulation_data, list):
         print("No simulation data available!")
         return
-
+    
+    if not any(var.get() for var in checkbox_vars ):
+        print("No simulation data will be saved!")
+        return
+    
+    fieldnames = []
+    
+    if checkbox_vars[0].get():  # Map Name
+        fieldnames.append('map')
+    if checkbox_vars[1].get():  # Vehicle ID
+        fieldnames.append('vehicle_id')
+    if checkbox_vars[2].get():  # HUD ID
+        fieldnames.append('hud_id')
+    if checkbox_vars[3].get():  # Simulation Step
+        fieldnames.append('simulation_time')
+    if checkbox_vars[4].get():  # Vehicle Type
+        fieldnames.append('vehicle_type')
+    if checkbox_vars[5].get():  # Position X
+        fieldnames.append('position_x')
+    if checkbox_vars[6].get():  # Position Y
+        fieldnames.append('position_y')
+    if checkbox_vars[7].get():  # Current Speed
+        fieldnames.append('current_speed')
+    if checkbox_vars[8].get():  # Current Gap
+        fieldnames.append('current_gap')
+    if checkbox_vars[9].get():  # Current Acceleration
+        fieldnames.append('current_acceleration')
+    if checkbox_vars[10].get():  # Distance Traveled
+        fieldnames.append('distance_traveled')
+    if checkbox_vars[11].get():  # Time Loss
+        fieldnames.append('time_loss')
+    if checkbox_vars[12].get():  # Max Speed
+        fieldnames.append('maxSpeed')
+    if checkbox_vars[13].get():  # Speed Adherence Factor
+        fieldnames.append('speedAdherenceFactor')
+    if checkbox_vars[14].get():  # Reaction Time
+        fieldnames.append('reactionTime')
+    if checkbox_vars[15].get():  # Fatigueness Level
+        fieldnames.append('fatiguenessLevel')
+    if checkbox_vars[16].get():  # Awareness Level
+        fieldnames.append('awarenessLevel')
+    if checkbox_vars[17].get():  # Accel Factor
+        fieldnames.append('acceleration')
+    if checkbox_vars[18].get():  # Min Gap Factor
+        fieldnames.append('minGapFactor')
+    if checkbox_vars[19].get():  # Distraction Level
+        fieldnames.append('distractionLevel')
+    if checkbox_vars[20].get():  # Brightness
+        fieldnames.append('brightness')
+    if checkbox_vars[21].get():  # Information Frequency
+        fieldnames.append('information_frequency')
+    if checkbox_vars[22].get():  # Information Relevance
+        fieldnames.append('information_relevance')
+    if checkbox_vars[23].get():  # FoV
+        fieldnames.append('FoV')
+    
+    
     now = datetime.now()
 
     timestamp = now.strftime("%H-%M-%S_%Y-%m-%d")
 
-    csv_filename = f'Simulation_data/{map}_{timestamp}_simulation_data.csv'
+    csv_filename = f'Simulation_data/{map}_{timestamp}_simulation_data.csv'    
 
     with open(csv_filename, mode='w', newline='') as file:
-        fieldnames = ['map',
-                    'vehicle_id',
-                    'hud_id',
-                    'vehicle_type',
-                    'position_x',
-                    'position_y',
-                    'current_speed',
-                    'current_min_gap',
-                    'acceleration',
-                    'distance_traveled',
-                    'time_loss',
-                    'maxSpeed',
-                    'speedAdherenceFactor',
-                    'reactionTime',
-                    'fatiguenessLevel',
-                    'awarenessLevel',
-                    'accelFactor',
-                    'minGapFactor',
-                    'distractionLevel']
-        
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
 
         for entry in simulation_data:
-            if isinstance(entry, list):
-                vehicle_id = entry[0]                
-                current_speed = entry[1]             
-                current_min_gap = entry[2]           
-                position_x = entry[3]                
-                position_y = entry[4]                
-                acceleration = entry[5]
-                distance_traveled = entry[6]
-                time_loss = entry[7]
 
-                vehicle_type = vehicle_type_mapping.get(vehicle_id, "unknown")
-                
-                hud_id = hud_id_mapping.get(vehicle_type, "unknown")
+            row_data = {}
 
-                hud_data_for_type = hud_data.get(vehicle_type, {})
+            vehicle_type = vehicle_type_mapping.get(entry[0], "unknown")
 
-                hud_name = hud_data_for_type.get('HUDname', 'N/A')
-                max_speed = hud_data_for_type.get('max_speed', 'N/A')
-                speedFactor = hud_data_for_type.get('speed_factor', 'N/A')
-                reactionTime = hud_data_for_type.get('reactTime', 'N/A')
-                fatiguenessLevel = hud_data_for_type.get('fatigueness_level', 'N/A')
-                awarenessLevel = hud_data_for_type.get('awareness_level', 'N/A')
-                accelFactor = hud_data_for_type.get('accel_factor', 'N/A')
-                minGap = hud_data_for_type.get('min_Gap', 'N/A')
-                distractionLevel = hud_data_for_type.get('distraction_level', 'N/A')
-                idName = f"{hud_id}_{hud_name}"
+            hud_data_for_type = hud_data.get(vehicle_type, {})
 
-                writer.writerow({
-                    'map': map,
-                    'vehicle_id': vehicle_id,
-                    'hud_id': idName,
-                    'vehicle_type': vehicle_type,
-                    'position_x': position_x,
-                    'position_y': position_y,
-                    'current_speed': current_speed,
-                    'current_min_gap': current_min_gap,
-                    'acceleration': acceleration,
-                    'distance_traveled': distance_traveled,
-                    'time_loss': time_loss,
-                    'maxSpeed': max_speed,
-                    'speedAdherenceFactor': speedFactor,
-                    'reactionTime': reactionTime,
-                    'fatiguenessLevel': fatiguenessLevel,
-                    'awarenessLevel': awarenessLevel,
-                    'accelFactor': accelFactor,
-                    'minGapFactor': minGap,
-                    'distractionLevel': distractionLevel
-                })
+            hud_name = hud_data_for_type.get('HUDname', 'N/A')
 
+            hud_id = hud_id_mapping.get(vehicle_type, "unknown")
+
+            idName = f"{hud_id}_{hud_name}"
+
+
+            if checkbox_vars[0].get(): 
+                row_data['map'] = map
+            if checkbox_vars[1].get():  
+                row_data['vehicle_id'] = entry[0]
+            if checkbox_vars[2].get(): 
+                row_data['hud_id'] = idName
+            if checkbox_vars[3].get():  
+                row_data['simulation_time'] = entry[1]  
+            if checkbox_vars[4].get():  
+                row_data['vehicle_type'] = vehicle_type
+            if checkbox_vars[5].get():  
+                row_data['position_x'] = entry[2]
+            if checkbox_vars[6].get():  
+                row_data['position_y'] = entry[3]
+            if checkbox_vars[7].get():  
+                row_data['current_speed'] = entry[4]
+            if checkbox_vars[8].get():  
+                row_data['current_gap'] = entry[5]
+            if checkbox_vars[9].get():  
+                row_data['current_acceleration'] = entry[6]
+            if checkbox_vars[10].get():  
+                row_data['distance_traveled'] = entry[7]
+            if checkbox_vars[11].get():  
+                row_data['time_loss'] = entry[8]
+            if checkbox_vars[12].get():  
+                row_data['maxSpeed'] = max_speed = hud_data_for_type.get('max_speed', 'N/A')
+            if checkbox_vars[13].get(): 
+                row_data['speedAdherenceFactor'] = speedFactor = hud_data_for_type.get('speed_factor', 'N/A')
+            if checkbox_vars[14].get():  
+                row_data['reactionTime'] = hud_data_for_type.get('reactTime', 'N/A')
+            if checkbox_vars[15].get():  
+                row_data['fatiguenessLevel'] = hud_data_for_type.get('fatigueness_level', 'N/A')
+            if checkbox_vars[16].get():  
+                row_data['awarenessLevel'] = hud_data_for_type.get('awareness_level', 'N/A')
+            if checkbox_vars[17].get():  
+                row_data['acceleration'] = hud_data_for_type.get('accel_factor', 'N/A')
+            if checkbox_vars[18].get(): 
+                row_data['minGapFactor'] = hud_data_for_type.get('min_Gap', 'N/A')
+            if checkbox_vars[19].get():  
+                row_data['distractionLevel'] = hud_data_for_type.get('distraction_level', 'N/A')
+            if checkbox_vars[20].get():  
+                row_data['brightness'] = hud_data_for_type.get('brightness', 'N/A')
+            if checkbox_vars[21].get():  
+                row_data['information_frequency'] = hud_data_for_type.get('frequency', 'N/A')
+            if checkbox_vars[22].get():  
+                row_data['information_relevance'] = hud_data_for_type.get('relevance', 'N/A')
+            if checkbox_vars[23].get(): 
+                row_data['FoV'] = hud_data_for_type.get('field of view', 'N/A')
+
+            
+            writer.writerow(row_data)
+            
 string_hud_frames = []
 
 def convert_hudFrames():
@@ -348,8 +401,6 @@ def start_simulation():
 
 
 def hudSelection():
-    experience_level = 5
-    age = 30
 
     for hud in string_hud_frames:
         brightness_level = hud['brightness_var']
@@ -510,13 +561,17 @@ def modify_vehicle_routes(selected_map):
 def close_window():
     root.destroy()
 
+next_hud_id = 1
+
 def add_hud():
+
+    global next_hud_id
 
     if len(hud_frames) >= len(all_vehicle_types):
         messagebox.showwarning("No available IDs", "There are no vehicle types available for simulation!")
         return
     
-    hud_frame = create_hud_frame()
+    hud_frame = create_hud_frame(next_hud_id)
 
     hud_frames.append(hud_frame)
 
@@ -527,6 +582,8 @@ def add_hud():
     update_scrollregion()
     
     print("Added HUD: " + str(len(hud_frames)))
+
+    next_hud_id += 1
 
    
 def remove_hud(hud_id):
@@ -581,7 +638,8 @@ def on_validate_input(value, entry):
         entry.config(bg="red")  
     return True  
 
-def create_hud_frame():
+
+def create_hud_frame(next_hud_id):
     hud_number = len(hud_frames) + 1
 
     frame = tk.Frame(scrollable_frame, bg="white", bd=2, relief="raised")
@@ -704,7 +762,7 @@ def create_hud_frame():
         'relevance_var': relevance_var,
         'fov_var': fov_var,
         'vehicle_type': vehicle_type,
-        'hud_id': hud_number 
+        'hud_id': next_hud_id 
     }
 
     remove_button = tk.Button(frame, text="Remove HUD", command=lambda: remove_hud(hud.get("hud_id")), bg="#ff6347", fg="white", width=15, font=('Helvetica', 12))
@@ -789,6 +847,90 @@ notebook.add(main_tab, text="Main")
 
 
 #°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°#
+#--------------------SETTINGS PAGE--------------------#
+#°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°#
+
+
+# Scrollable frame setup
+settings_tab = ttk.Frame(notebook)
+notebook.add(settings_tab, text="Settings")
+
+# Create a Canvas to allow scrolling
+canvas = tk.Canvas(settings_tab)
+scrollbar = ttk.Scrollbar(settings_tab, orient="vertical", command=canvas.yview)
+scrollable_frame = ttk.Frame(canvas)
+
+scrollable_frame.bind(
+    "<Configure>",
+    lambda e: canvas.configure(
+        scrollregion=canvas.bbox("all")
+    )
+)
+
+canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+canvas.configure(yscrollcommand=scrollbar.set)
+
+def on_mouse_wheel(event):
+    canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+canvas.bind("<MouseWheel>", on_mouse_wheel)
+
+
+# Layout the canvas and scrollbar
+canvas.pack(side="left", fill="both", expand=True)
+scrollbar.pack(side="right", fill="y")
+
+# Header Label
+header_label = tk.Label(scrollable_frame, text="This is the settings page. Here you can enable and disable which data will be saved into the \n .csv during the simulation."
+                                               "By default all the options are enabled.", font=("Arial", 12))
+header_label.grid(row=0, column=0, columnspan=2, padx=80, pady=5, sticky="we")  # Center the header
+ 
+
+# Individuelle Texte für jede Checkbox
+checkbox_texts = [
+    "Enable saving the map name:",
+    "Enable saving the vehicle_id:",
+    "Enable saving the hud_id:",
+    "Enable saving the simulation_time:",
+    "Enable saving the vehicle_type:",
+    "Enable saving the position_x of the vehicle:",
+    "Enable saving the position_y of the vehicle:",
+    "Enable saving the current_speed of the vehicle:",
+    "Enable saving the current_gap of the vehicle:",
+    "Enable saving the current_acceleration of the vehicle:",
+    "Enable saving the distance_traveled by the vehicle:",
+    "Enable saving the time_loss the vehicle is experiencing:",
+    "Enable saving the calculated maxSpeed of the vehicle:",
+    "Enable saving the calculated speedAdherenceFactor of the vehicle:",
+    "Enable saving the calculated reactionTime:",
+    "Enable saving the calculated fatigunessLevel:",
+    "Enable saving the calculated awarenessLevel:",
+    "Enable saving the calculated acceleration:",
+    "Enable saving the calculated minGapFactor:",
+    "Enable saving the calculated distractionLevel:",
+    "Enable saving the selected brightness:",
+    "Enable saving the selected information_frequency:",
+    "Enable saving the selected information_relevance:",
+    "Enable saving the selected FoV:"
+]
+
+# Create 20 labels and checkboxes with unique text
+checkbox_vars = []
+for i, text in enumerate(checkbox_texts):
+    label = ttk.Label(scrollable_frame, text=text)
+    label.grid(row=i + 1, column=0, padx=10, pady=5, sticky="e")
+    
+    checkbox_var = tk.BooleanVar(value="true")
+    checkbox = ttk.Checkbutton(scrollable_frame, variable=checkbox_var)
+    checkbox.grid(row=i + 1, column=1, pady=5, sticky="w")
+    
+    checkbox_vars.append(checkbox_var)
+
+
+scrollable_frame.update_idletasks()  # Ensure all geometry updates are processed
+canvas.configure(scrollregion=canvas.bbox("all")) 
+
+#°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°#
 #--------------------HELP PAGE------------------------#
 #°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°#
 
@@ -831,7 +973,7 @@ header_label.pack(pady=5, padx=20, anchor="w")
 
 image_frame = tk.Frame(scrollable_frame)
 image_frame.pack(pady=10, padx=10, anchor="w")
-imageicon1 = Image.open("icons\stopwatch-svgrepo-com.png")
+imageicon1 = Image.open("icons\\stopwatch-svgrepo-com.png")
 imageicon1 = imageicon1.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
 imageicon1_tk = ImageTk.PhotoImage(imageicon1)
 
@@ -859,7 +1001,7 @@ label_imageicon2.pack(pady=10)
 
 image_frame = tk.Frame(scrollable_frame)
 image_frame.pack(pady=10, padx=10, anchor="w")
-imageicon3 = Image.open("icons\calendar-svgrepo-com.png")
+imageicon3 = Image.open("icons\\calendar-svgrepo-com.png")
 imageicon3 = imageicon3.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
 imageicon3_tk = ImageTk.PhotoImage(imageicon3)
 
@@ -872,7 +1014,7 @@ label_imageicon3.pack(pady=10)
 label_imageicon3 = tk.Label(imageicon3, text="Current date (placeholder)", font=("Arial", 12))
 label_imageicon3.pack(pady=10)
 
-imageicon4 = Image.open("icons\clock-svgrepo-com.png")
+imageicon4 = Image.open("icons\\clock-svgrepo-com.png")
 imageicon4 = imageicon4.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
 imageicon4_tk = ImageTk.PhotoImage(imageicon4)
 
@@ -887,7 +1029,7 @@ label_imageicon4.pack(pady=10)
 
 image_frame = tk.Frame(scrollable_frame)
 image_frame.pack(pady=10, padx=10, anchor="w")
-imageicon5 = Image.open("icons\compass-svgrepo-com.png")
+imageicon5 = Image.open("icons\\compass-svgrepo-com.png")
 imageicon5 = imageicon5.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
 imageicon5_tk = ImageTk.PhotoImage(imageicon5)
 
@@ -900,7 +1042,7 @@ label_imageicon5.pack(pady=10)
 label_imageicon5 = tk.Label(imageicon5, text="Current Orientation (placeholder)", font=("Arial", 12))
 label_imageicon5.pack(pady=10)
 
-imageicon6 = Image.open("icons\idea-svgrepo-com.png")
+imageicon6 = Image.open("icons\\idea-svgrepo-com.png")
 imageicon6 = imageicon6.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
 imageicon6_tk = ImageTk.PhotoImage(imageicon6)
 
@@ -915,7 +1057,7 @@ label_imageicon6.pack(pady=10)
 
 image_frame = tk.Frame(scrollable_frame)
 image_frame.pack(pady=10, padx=10, anchor="w")
-imageicon7 = Image.open("icons\minus-svgrepo-com.png")
+imageicon7 = Image.open("icons\\minus-svgrepo-com.png")
 imageicon7 = imageicon7.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
 imageicon7_tk = ImageTk.PhotoImage(imageicon7)
 
@@ -928,7 +1070,7 @@ label_imageicon7.pack(pady=10)
 label_imageicon7 = tk.Label(imageicon7, text="Current speed limit (placeholder)", font=("Arial", 12))
 label_imageicon7.pack(pady=10)
 
-imageicon8 = Image.open("icons\music-player-svgrepo-com.png")
+imageicon8 = Image.open("icons\\music-player-svgrepo-com.png")
 imageicon8 = imageicon8.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
 imageicon8_tk = ImageTk.PhotoImage(imageicon8)
 
@@ -956,7 +1098,7 @@ label_imageicon9.pack(pady=10)
 label_imageicon9 = tk.Label(imageicon9, text="Navigation (placeholder)", font=("Arial", 12))
 label_imageicon9.pack(pady=10)
 
-imageicon10 = Image.open("icons\placeholder-svgrepo-com.png")
+imageicon10 = Image.open("icons\\placeholder-svgrepo-com.png")
 imageicon10 = imageicon10.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
 imageicon10_tk = ImageTk.PhotoImage(imageicon10)
 
@@ -985,7 +1127,7 @@ label_imageicon11.pack(pady=10)
 label_imageicon11 = tk.Label(imageicon11, text="Smartphone connection (placeholder)", font=("Arial", 12))
 label_imageicon11.pack(pady=10)
 
-imageicon12 = Image.open("icons\speaker-svgrepo-com.png")
+imageicon12 = Image.open("icons\\speaker-svgrepo-com.png")
 imageicon12 = imageicon12.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust picture size
 imageicon12_tk = ImageTk.PhotoImage(imageicon12)
 
@@ -1219,7 +1361,7 @@ simulate_checkbox.pack()
 spectator_checkbox = tk.Checkbutton(main_tab, text="Start the CARLA first-person spectator client", variable=spectate_var, font=('Helvetica', 12))
 spectator_checkbox.pack()
 
-hudless_checkbox = tk.Checkbutton(main_tab, text="Simulate a car without HUD", variable=hudless_var, font=('Helvetica', 12))
+hudless_checkbox = tk.Checkbutton(main_tab, text="Simulate a car that is not using a HUD. \n"" The HUD probability is always 5 parts.", variable=hudless_var, font=('Helvetica', 12))
 hudless_checkbox.pack()
 
 canvas = tk.Canvas(main_tab, bg="#f0f0f0")
