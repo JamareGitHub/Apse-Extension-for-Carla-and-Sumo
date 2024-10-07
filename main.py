@@ -903,7 +903,7 @@ checkbox_texts = [
     "Enable saving the calculated maxSpeed of the vehicle:",
     "Enable saving the calculated speedAdherenceFactor of the vehicle:",
     "Enable saving the calculated reactionTime:",
-    "Enable saving the calculated fatigunessLevel:",
+    "Enable saving the calculated fatiguenessLevel:",
     "Enable saving the calculated awarenessLevel:",
     "Enable saving the calculated acceleration:",
     "Enable saving the calculated minGapFactor:",
@@ -1361,7 +1361,7 @@ simulate_checkbox.pack()
 spectator_checkbox = tk.Checkbutton(main_tab, text="Start the CARLA first-person spectator client", variable=spectate_var, font=('Helvetica', 12))
 spectator_checkbox.pack()
 
-hudless_checkbox = tk.Checkbutton(main_tab, text="Simulate a car that is not using a HUD. \n"" The HUD probability is always 5 parts.", variable=hudless_var, font=('Helvetica', 12))
+hudless_checkbox = tk.Checkbutton(main_tab, text="Simulate a car that is not using a HUD. \n"" The HUD probability is always 5.", variable=hudless_var, font=('Helvetica', 12))
 hudless_checkbox.pack()
 
 canvas = tk.Canvas(main_tab, bg="#f0f0f0")
